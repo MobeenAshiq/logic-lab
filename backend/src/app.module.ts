@@ -10,6 +10,7 @@ import { ChatModule } from './chat/chat.module';
 import { CommunityModule } from './community/community.module';
 import { ContentModule } from './content/content.module';
 import { LearningModule } from './learning/learning.module';
+import { LiveClassesModule } from './live-classes/live-classes.module';
 import { validateEnv } from './config/env';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
     AssessmentsModule,
     CommunityModule,
     ChatModule,
+    LiveClassesModule,
   ],
   controllers: [AppController, PortalsController],
 })

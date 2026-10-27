@@ -65,6 +65,8 @@ model User {
   notifications     Notification[]
   officeHours       OfficeHourSlot[]
   notificationPrefs NotificationPreference?
+  mentoredLiveSessions LiveSession[]        @relation("LiveSessionMentor")
+  attendance        Attendance[]
 
   @@map("users")
 }
@@ -198,6 +200,7 @@ model Course {
   enrollments   Enrollment[]
   questionBank  Question[]
   conversations Conversation[]
+  liveSessions  LiveSession[]
 
   @@index([trackId, position])
   @@map("courses")
@@ -1086,4 +1089,50 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: live classes & attendance
+// ---------------------------------------------------------------------------
+
+model LiveSession {
+  id              String       @id @default(uuid()) @db.Uuid
+  courseId        String       @map("course_id") @db.Uuid
+  mentorId        String       @map("mentor_id") @db.Uuid
+  title           String
+  description     String       @default("")
+  startsAt        DateTime     @map("starts_at") @db.Timestamptz
+  durationMinutes Int          @default(60) @map("duration_minutes")
+  /// Unguessable room name for Jitsi Meet (e.g. logiclab-uuid).
+  roomName        String       @unique @map("room_name")
+  /// R2 key of uploaded recording (live-sessions/<id>/recording.mp4).
+  recordingKey    String?      @map("recording_key")
+  reminderSentAt  DateTime?    @map("reminder_sent_at") @db.Timestamptz
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  course     Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  mentor     User         @relation("LiveSessionMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+
+  @@index([courseId, startsAt])
+  @@index([mentorId, startsAt])
+  @@map("live_sessions")
+}
+
+model Attendance {
+  id        String    @id @default(uuid()) @db.Uuid
+  sessionId String    @map("session_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  joinedAt  DateTime  @default(now()) @map("joined_at") @db.Timestamptz
+  leftAt    DateTime? @map("left_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([userId, joinedAt])
+  @@map("attendance")
 }

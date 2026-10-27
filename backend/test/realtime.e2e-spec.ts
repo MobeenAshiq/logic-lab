@@ -520,6 +520,7 @@ describe('Phase 7: realtime chat, points, leaderboard, notifications', () => {
         },
         update: {},
       });
+      await prisma.pointEvent.deleteMany({ where: { seasonId: old.id } });
       await prisma.pointEvent.create({
         data: {
           userId: ids.student2,

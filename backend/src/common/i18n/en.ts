@@ -101,6 +101,12 @@ export const en = {
     CONVERSATION_CLOSED: 'This conversation is closed.',
     ALREADY_CLAIMED: 'Another mentor already picked up this doubt.',
     NOT_CONVERSATION_MEMBER: 'You are not part of this conversation.',
+    LIVE_SESSION_NOT_FOUND: 'Live session not found.',
+    TOO_EARLY_FOR_LIVE_SESSION:
+      'The live class will open 10 minutes before the scheduled start time.',
+    NOT_SESSION_MENTOR: 'You are not the mentor of this live class.',
+    RECORDING_NOT_UPLOADED:
+      'No recording has been uploaded for this session yet.',
   },
   email: {
     verifySubject: 'Your LogicLab verification code',
@@ -133,6 +139,8 @@ export const en = {
     paymentRejected: 'Your payment could not be verified',
     newAnswer: (title: string) => `New answer on "${title}"`,
     answerAccepted: (title: string) => `Your answer on "${title}" was accepted`,
+    liveClassSoon: (title: string) =>
+      `Live class "${title}" starts in 30 minutes`,
     points: (n: number, reason: string) =>
       `${n > 0 ? '+' : ''}${n} points: ${reason}`,
     warning: 'A message from the moderators',
