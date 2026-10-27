@@ -1,7 +1,7 @@
 export const common = {
-  appName: "Logic Lab",
-  tagline: "Build Logical Minds, Create Better Future",
-  siteTitle: "Logic Lab: Build Logical Minds, Create Better Future",
+  appName: "LogicLab",
+  tagline: "Think it. Build it. Master it.",
+  siteTitle: "LogicLab · Think it. Build it. Master it.",
   siteDescription:
     "Learn programming the right way: Logic Building, Web Development and AI/ML with real mentors, built for students in Pakistan.",
   actions: {

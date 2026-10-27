@@ -5,7 +5,7 @@ import { PlanCard } from "@/components/site/plan-card";
 import { TrackCard } from "@/components/site/track-card";
 import { Button } from "@/components/ui/button";
 import { serverApi } from "@/lib/api/server";
-import { BRAND, PROGRAMS, STOCK } from "@/lib/brand";
+import { BRAND, STOCK } from "@/lib/brand";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PublicPlan, PublicTrack, SiteContent } from "@/types/api";
@@ -98,28 +98,6 @@ export default async function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 pt-20">
-        <SectionTitle title={t.site.programs.title} subtitle={t.site.programs.subtitle} />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {PROGRAMS.map((program) => (
-            <Link
-              key={program.key}
-              href={`/courses?track=${program.track}`}
-              className="group block overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-lg"
-            >
-              <Image
-                src={program.image}
-                alt={t.site.programs.alts[program.key]}
-                width={482}
-                height={968}
-                sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
-                className="h-auto w-full transition-transform duration-500 group-hover:scale-[1.02]"
-              />
-            </Link>
-          ))}
         </div>
       </section>
 
