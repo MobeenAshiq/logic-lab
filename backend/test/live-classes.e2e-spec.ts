@@ -32,78 +32,11 @@ class FakeMail {
   }
 }
 
-class FakeR2 {
-  isConfigured = true;
-  getUploadUrl(key: string) {
-    return Promise.resolve(`https://r2.test/${key}`);
-  }
-  getDownloadUrl(key: string) {
-    return Promise.resolve(`https://r2.test/${key}?signed=1`);
-  }
-}
-
-describe('Phase 8: live classes & attendance', () => {
-  let app: INestApplication<App>;
-  let prisma: PrismaService;
-  const mail = new FakeMail();
-  let admin: TestAgent;
-  let mentor: TestAgent;
-  let otherMentor: TestAgent;
-  let studentWithAccess: TestAgent;
-  let studentWithoutAccess: TestAgent;
-
-  const ids = {
-    mentor: '',
-    otherMentor: '',
-    studentWithAccess: '',
-    studentWithoutAccess: '',
-    track: '',
-    course: '',
-    module: '',
-    sessionId: '',
-  };
-
-  async function createUser(address: string, role: Role) {
-    return prisma.asAdmin(Role.super_admin, async (tx) => {
-      const u = await tx.user.create({
-        data: {
-          email: address,
-          passwordHash: await hash(PASSWORD, 4),
-          emailVerifiedAt: new Date(),
-        },
-      });
-      await tx.profile.update({
-        where: { id: u.id },
-        data: { role, fullName: `${role} ${run}` },
-      });
-      return u.id;
-    });
-  }
-
-  async function login(address: string) {
-    const a = request.agent(app.getHttpServer());
-    const res = await a
-      .post('/auth/login')
-      .send({ email: address, password: PASSWORD })
-      .expect(200);
-    if (res.body.mfa === 'setup') {
-      const setup = await a.post('/auth/mfa/setup').expect(201);
-      await a
-        .post('/auth/mfa/enable')
-        .send({ code: authenticator.generate(setup.body.secret as string) })
-        .expect(200);
-    }
-    return a;
-  }
-
-  beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(MailService)
       .useValue(mail)
       .overrideProvider(RateLimitService)
       .useValue({ consume: () => Promise.resolve() })
-      .overrideProvider(R2Service)
-      .useClass(FakeR2)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -138,15 +71,18 @@ describe('Phase 8: live classes & attendance', () => {
       .expect(201);
     ids.track = track.body.id;
 
-    const course = await admin
+    const courseRes = await admin
       .post('/admin/content/courses')
       .send({
         trackId: ids.track,
         title: `Live Course ${run}`,
         isPublished: true,
-      })
-      .expect(201);
-    ids.course = course.body.id;
+      });
+    if (courseRes.status !== 201) {
+      console.error('Course create failed:', courseRes.status, courseRes.body);
+    }
+    expect(courseRes.status).toBe(201);
+    ids.course = courseRes.body.id;
 
     const mod = await admin
       .post(`/admin/content/courses/${ids.course}/modules`)
