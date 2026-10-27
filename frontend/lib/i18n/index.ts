@@ -7,7 +7,9 @@ import { common } from "./en/common";
 import { community } from "./en/community";
 import { grading } from "./en/grading";
 import { learning } from "./en/learning";
+import { live } from "./en/live";
 import { moderation } from "./en/moderation";
+import { realtime } from "./en/realtime";
 import { site } from "./en/site";
 import { student } from "./en/student";
 import { teaching } from "./en/teaching";
@@ -25,4 +27,6 @@ export const t = {
   moderation,
   admin,
   adminContent,
+  realtime,
+  live,
 } as const;

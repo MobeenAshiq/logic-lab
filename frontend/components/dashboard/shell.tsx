@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -135,7 +136,8 @@ export function DashboardShell({
             </SheetContent>
           </Sheet>
           <Logo href={home} className="lg:hidden" />
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1.5">
+            <NotificationsBell />
             <ThemeToggle />
             <UserMenu />
           </div>

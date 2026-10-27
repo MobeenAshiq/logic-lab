@@ -565,32 +565,32 @@ export type QuizBlockedReason = "QUIZ_NOT_OPEN" | "QUIZ_CLOSED" | "NO_ATTEMPTS_L
 export type QuizInfo =
   | { ready: false; serverNow: string }
   | {
-      ready: true;
-      serverNow: string;
-      quizId: string;
-      timeLimitSeconds: number;
-      startsAt: string | null;
-      endsAt: string | null;
-      passMark: number;
-      maxAttempts: number;
-      questionCount: number;
-      totalPoints: number;
-      activeAttemptId: string | null;
-      canStart: boolean;
-      blockedReason: QuizBlockedReason | null;
-      passed: boolean;
-      attempts: {
-        id: string;
-        status: AttemptStatus;
-        startedAt: string;
-        submittedAt: string | null;
-        autoSubmitted: boolean;
-        score: number | null;
-        maxScore: number;
-        percent: number | null;
-        passed: boolean | null;
-      }[];
-    };
+    ready: true;
+    serverNow: string;
+    quizId: string;
+    timeLimitSeconds: number;
+    startsAt: string | null;
+    endsAt: string | null;
+    passMark: number;
+    maxAttempts: number;
+    questionCount: number;
+    totalPoints: number;
+    activeAttemptId: string | null;
+    canStart: boolean;
+    blockedReason: QuizBlockedReason | null;
+    passed: boolean;
+    attempts: {
+      id: string;
+      status: AttemptStatus;
+      startedAt: string;
+      submittedAt: string | null;
+      autoSubmitted: boolean;
+      score: number | null;
+      maxScore: number;
+      percent: number | null;
+      passed: boolean | null;
+    }[];
+  };
 
 export interface SavedAnswer {
   optionIds?: string[];
@@ -837,3 +837,155 @@ export interface ModerationGroup {
     reporter: PersonRef;
   }[];
 }
+
+// ---------------------------------------------------------------------------
+// Phase 7: Realtime Chat, Points, Leaderboard, Notifications
+// ---------------------------------------------------------------------------
+
+export type ConversationStatus = "waiting" | "open" | "closed";
+
+export type PointReason =
+  | "quiz_passed"
+  | "assignment_on_time"
+  | "accepted_answer"
+  | "streak_7_days"
+  | "live_class_attended"
+  | "plagiarism_confirmed";
+
+export type NotificationType =
+  | "new_doubt"
+  | "doubt_claimed"
+  | "chat_reply"
+  | "grade_returned"
+  | "quiz_graded"
+  | "payment_approved"
+  | "payment_rejected"
+  | "new_answer"
+  | "answer_accepted"
+  | "points"
+  | "moderation_warning"
+  | "live_class_soon";
+
+export interface Conversation {
+  id: string;
+  studentId: string;
+  mentorId: string | null;
+  courseId: string;
+  subject: string;
+  status: ConversationStatus;
+  lastMessageAt: string;
+  studentLastReadAt: string | null;
+  mentorLastReadAt: string | null;
+  claimedAt: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student: PersonRef;
+  mentor: PersonRef | null;
+  course: { id: string; title: string; slug: string };
+  lastMessage?: { id: string; body: string; createdAt: string; senderId: string };
+  unreadCount?: number;
+  isWithinOfficeHours?: boolean;
+  mentorOfficeHoursNote?: string;
+  messages?: ChatMessage[];
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  attachmentKey: string | null;
+  attachmentUrl?: string | null;
+  createdAt: string;
+  sender: PersonRef;
+}
+
+export interface OfficeHourSlot {
+  id?: string;
+  weekday: number; // 0 = Sun .. 6 = Sat
+  startMinute: number; // 0 .. 1439
+  endMinute: number;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export type NotificationPreferences = Partial<Record<NotificationType, boolean>>;
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  points: number;
+  isMe: boolean;
+}
+
+export interface LeaderboardResponse {
+  season: { key: string; startsAt: string; endsAt: string };
+  track: { id: string; title: string; slug: string } | null;
+  entries: LeaderboardEntry[];
+  me: { rank: number; points: number } | null;
+}
+
+export interface StudentPointsSummary {
+  season: string;
+  seasonPoints: number;
+  totalPoints: number;
+  rank: number | null;
+  recent: { id: string; reason: PointReason; points: number; createdAt: string }[];
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: Live Classes & Attendance
+// ---------------------------------------------------------------------------
+
+export interface LiveSession {
+  id: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  durationMinutes: number;
+  roomName?: string;
+  hasRecording?: boolean;
+  recordingKey?: string | null;
+  recordingUrl?: string | null;
+  canJoin?: boolean;
+  attended?: boolean;
+  course: { id: string; title: string; slug?: string };
+  mentor: PersonRef;
+  attendanceCount?: number;
+  attendance?: { id: string; joinedAt: string; leftAt: string | null } | null;
+}
+
+export interface LiveSessionAttendance {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  avatarUrl: string | null;
+  joinedAt: string;
+  leftAt: string | null;
+  durationMinutes: number | null;
+}
+
+export interface LiveSessionDetail extends LiveSession {
+  attendance: LiveSessionAttendance[];
+}
+
+export interface LiveSessionRoom {
+  id: string;
+  title: string;
+  roomName: string;
+  domain: string;
+  displayName: string;
+}
+

@@ -10,10 +10,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { portalHome, useMe } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
+
 const links = [
   { href: "/courses", label: t.common.nav.courses },
   { href: "/pricing", label: t.common.nav.pricing },
   { href: "/community", label: t.community.nav },
+  { href: "/leaderboard", label: t.realtime.leaderboard.nav },
 ];
 
 function AuthButtons({ onNavigate }: { onNavigate?: () => void }) {
@@ -21,9 +24,12 @@ function AuthButtons({ onNavigate }: { onNavigate?: () => void }) {
   if (isLoading) return <div className="h-8 w-40" />;
   if (me) {
     return (
-      <Button asChild onClick={onNavigate}>
-        <Link href={portalHome(me.user.role)}>{t.common.nav.dashboard}</Link>
-      </Button>
+      <div className="flex items-center gap-2">
+        <NotificationsBell />
+        <Button asChild onClick={onNavigate}>
+          <Link href={portalHome(me.user.role)}>{t.common.nav.dashboard}</Link>
+        </Button>
+      </div>
     );
   }
   return (

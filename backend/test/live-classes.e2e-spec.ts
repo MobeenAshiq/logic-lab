@@ -32,6 +32,61 @@ class FakeMail {
   }
 }
 
+describe('Phase 8: live classes & attendance', () => {
+  let app: INestApplication<App>;
+  let prisma: PrismaService;
+  const mail = new FakeMail();
+  let admin: TestAgent;
+  let mentor: TestAgent;
+  let otherMentor: TestAgent;
+  let studentWithAccess: TestAgent;
+  let studentWithoutAccess: TestAgent;
+
+  const ids = {
+    mentor: '',
+    otherMentor: '',
+    studentWithAccess: '',
+    studentWithoutAccess: '',
+    track: '',
+    course: '',
+    module: '',
+    sessionId: '',
+  };
+
+  async function createUser(address: string, role: Role) {
+    return prisma.asAdmin(Role.super_admin, async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email: address,
+          passwordHash: await hash(PASSWORD, 4),
+          emailVerifiedAt: new Date(),
+        },
+      });
+      await tx.profile.update({
+        where: { id: u.id },
+        data: { role, fullName: `${role} ${run}` },
+      });
+      return u.id;
+    });
+  }
+
+  async function login(address: string) {
+    const a = request.agent(app.getHttpServer());
+    const res = await a
+      .post('/auth/login')
+      .send({ email: address, password: PASSWORD })
+      .expect(200);
+    if (res.body.mfa === 'setup') {
+      const setup = await a.post('/auth/mfa/setup').expect(201);
+      await a
+        .post('/auth/mfa/enable')
+        .send({ code: authenticator.generate(setup.body.secret as string) })
+        .expect(200);
+    }
+    return a;
+  }
+
+  beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(MailService)
       .useValue(mail)
@@ -185,7 +240,7 @@ class FakeMail {
   it('attendance records join and leave times, and awards points to student', async () => {
     // Check initial points
     const beforePoints = await studentWithAccess.get('/points/me').expect(200);
-    const initialTotal = beforePoints.body.total;
+    const initialTotal = beforePoints.body.totalPoints;
 
     // Student joins
     const joinRes = await studentWithAccess
@@ -202,9 +257,9 @@ class FakeMail {
 
     // Points awarded: +5 for live_class_attended
     const afterPoints = await studentWithAccess.get('/points/me').expect(200);
-    expect(afterPoints.body.total).toBe(initialTotal + 5);
+    expect(afterPoints.body.totalPoints).toBe(initialTotal + 5);
     expect(
-      afterPoints.body.events.some(
+      afterPoints.body.recent.some(
         (e: any) => e.reason === 'live_class_attended',
       ),
     ).toBe(true);

@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
   // The browser only talks to this app. /api/* is proxied to the NestJS API, so
   // auth cookies are first-party and middleware.ts can read them.
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${API_URL}/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${API_URL}/:path*` },
+      { source: "/socket.io/:path*", destination: `${API_URL}/socket.io/:path*` },
+    ];
   },
   async headers() {
     return [
