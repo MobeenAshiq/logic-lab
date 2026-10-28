@@ -23,10 +23,11 @@ export interface CourseCardProps {
     mentor?: { name: string; avatarUrl?: string | null };
     progress?: number; // 0 to 100 if enrolled
   };
+  href?: string;
   className?: string;
 }
 
-export function CourseCard({ course, className }: CourseCardProps) {
+export function CourseCard({ course, href, className }: CourseCardProps) {
   const trackTheme = TRACK_THEMES[course.track.slug] ?? {
     badge: "bg-primary/10 text-primary border-primary/20",
     color: "text-primary",
@@ -34,7 +35,7 @@ export function CourseCard({ course, className }: CourseCardProps) {
   const art = TRACK_ART[course.track.slug];
 
   return (
-    <Link href={`/courses/${course.slug}`} className={cn("group block h-full", className)}>
+    <Link href={href ?? `/courses/${course.slug}`} className={cn("group block h-full", className)}>
       <Card className="card-hover border-border bg-card group-hover:border-primary/50 flex h-full flex-col overflow-hidden rounded-xl pt-0 transition-all">
         {/* Course Thumbnail */}
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
@@ -110,7 +111,7 @@ export function CourseCard({ course, className }: CourseCardProps) {
             {typeof course.progress === "number" && (
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <span className="text-muted-foreground">{t.student?.progress ?? "Progress"}</span>
+                  <span className="text-muted-foreground">Progress</span>
                   <span className="text-primary font-semibold">{Math.round(course.progress)}%</span>
                 </div>
                 <div className="bg-muted mt-1.5 h-1.5 w-full overflow-hidden rounded-full">

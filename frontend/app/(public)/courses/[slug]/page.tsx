@@ -2,6 +2,7 @@ import { FileText, HelpCircle, Lock, NotebookPen, PlayCircle } from "lucide-reac
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { serverApi } from "@/lib/api/server";
@@ -31,6 +32,8 @@ export default async function CoursePage({ params }: Props) {
   const { slug } = await params;
   const course = await serverApi<PublicCourse>(`/courses/${encodeURIComponent(slug)}`);
   if (!course) notFound();
+  const jar = await cookies();
+  const isLoggedIn = jar.has("ll_access") || jar.has("ll_refresh");
   const lessonCount = course.modules.reduce((n, m) => n + m.lessons.length, 0);
 
   return (
@@ -75,47 +78,59 @@ export default async function CoursePage({ params }: Props) {
       )}
 
       <h2 className="mt-12 text-xl font-semibold">{t.site.catalog.curriculum}</h2>
-      <div className="mt-4 space-y-4">
-        {course.modules.map((mod, i) => (
-          <section key={mod.id} className="rounded-xl border">
-            <header className="border-b px-5 py-3">
-              <p className="text-muted-foreground text-xs font-medium">
-                {i + 1}. {mod.title}
-              </p>
-              {mod.description && (
-                <p className="text-muted-foreground mt-1 text-sm">{mod.description}</p>
-              )}
-            </header>
-            <ul className="divide-y">
-              {mod.lessons.map((lesson) => {
-                const Icon = lessonIcon[lesson.type];
-                return (
-                  <li key={lesson.id}>
-                    <Link
-                      href={`/student/lessons/${lesson.id}`}
-                      className="hover:bg-muted/50 flex items-center gap-3 px-5 py-3 text-sm transition-colors"
-                    >
-                      <Icon className="text-muted-foreground size-4 shrink-0" />
-                      <span className="flex-1">{lesson.title}</span>
-                      {lesson.durationSeconds ? (
-                        <span className="text-muted-foreground text-xs">
-                          {t.site.catalog.minutes(lesson.durationSeconds)}
-                        </span>
-                      ) : null}
-                      <Lock className="text-muted-foreground size-3.5" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))}
-      </div>
+      {course.modules.length > 0 ? (
+        <div className="mt-4 space-y-4">
+          {course.modules.map((mod, i) => (
+            <section key={mod.id} className="rounded-xl border">
+              <header className="border-b px-5 py-3">
+                <p className="text-muted-foreground text-xs font-medium">
+                  {i + 1}. {mod.title}
+                </p>
+                {mod.description && (
+                  <p className="text-muted-foreground mt-1 text-sm">{mod.description}</p>
+                )}
+              </header>
+              <ul className="divide-y">
+                {mod.lessons.map((lesson) => {
+                  const Icon = lessonIcon[lesson.type];
+                  return (
+                    <li key={lesson.id}>
+                      <Link
+                        href={`/student/lessons/${lesson.id}`}
+                        className="hover:bg-muted/50 flex items-center gap-3 px-5 py-3 text-sm transition-colors"
+                      >
+                        <Icon className="text-muted-foreground size-4 shrink-0" />
+                        <span className="flex-1">{lesson.title}</span>
+                        {lesson.durationSeconds ? (
+                          <span className="text-muted-foreground text-xs">
+                            {t.site.catalog.minutes(lesson.durationSeconds)}
+                          </span>
+                        ) : null}
+                        <Lock className="text-muted-foreground size-3.5" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-muted/30 mt-4 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          Curriculum is currently being updated. Check back shortly!
+        </div>
+      )}
 
       <div className="bg-muted/50 mt-10 flex flex-col items-center gap-3 rounded-xl px-6 py-8 text-center">
-        <p className="text-muted-foreground text-sm">{t.site.catalog.locked}</p>
+        <p className="text-muted-foreground text-sm">
+          {isLoggedIn ? "Continue your learning on your student dashboard." : t.site.catalog.locked}
+        </p>
         <Button asChild>
-          <Link href="/signup">{t.common.nav.startTrial}</Link>
+          {isLoggedIn ? (
+            <Link href={`/student/courses/${course.slug}`}>Go to Course</Link>
+          ) : (
+            <Link href="/signup">{t.common.nav.startTrial}</Link>
+          )}
         </Button>
       </div>
     </div>

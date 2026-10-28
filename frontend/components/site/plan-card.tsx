@@ -86,7 +86,8 @@ export function PlanCard({ plan, highlight = false }: { plan: PublicPlan; highli
           className="w-full h-10 font-semibold"
           variant={highlight ? "default" : "secondary"}
         >
-          <Link href="/signup">{t.site.pricing.choose}</Link>
+          {/* Logged-out visitors are sent to /login by middleware and come back here after. */}
+          <Link href={`/student/billing?plan=${plan.id}`}>{t.site.pricing.choose}</Link>
         </Button>
       </CardFooter>
     </Card>

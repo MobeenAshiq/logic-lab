@@ -37,6 +37,7 @@ import { useRealtimeEvent } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 import type {
   NotificationItem,
+  NotificationList,
   NotificationPreferences,
   NotificationType,
 } from "@/types/api";
@@ -68,11 +69,12 @@ export function NotificationsBell() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [filterUnread, setFilterUnread] = useState(false);
 
-  const { data: notifications = [] } = useQuery({
+  const { data } = useQuery({
     queryKey: ["notifications"],
-    queryFn: () => api<NotificationItem[]>("/notifications"),
+    queryFn: () => api<NotificationList>("/notifications"),
     refetchInterval: 30000,
   });
+  const notifications = data?.items ?? [];
 
   const { data: preferences } = useQuery({
     queryKey: ["notification-preferences"],
@@ -88,7 +90,7 @@ export function NotificationsBell() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notification-preferences"] });
-      toast.success(t.common.status.saved);
+      toast.success(t.adminContent.saved);
       setPrefsOpen(false);
     },
   });
@@ -128,7 +130,7 @@ export function NotificationsBell() {
     });
   });
 
-  const unreadCount = notifications.filter((n) => !n.readAt).length;
+  const unreadCount = data?.unread ?? 0;
   const filtered = filterUnread
     ? notifications.filter((n) => !n.readAt)
     : notifications;

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Download, FileText, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -48,7 +48,12 @@ const statusTone: Record<PaymentStatus, "warning" | "success" | "danger"> = {
   rejected: "danger",
 };
 
-export default function BillingPage() {
+export default function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan } = use(searchParams);
   const billing = useQuery({
     queryKey: BILLING_KEY,
     queryFn: () => api<StudentBilling>("/student/billing"),
@@ -69,7 +74,7 @@ export default function BillingPage() {
           <AlertDescription>{tb.pendingNotice}</AlertDescription>
         </Alert>
       ) : (
-        <Checkout billing={b} />
+        <Checkout billing={b} requestedPlanId={plan} />
       )}
       <History payments={b.payments} />
     </>
@@ -101,9 +106,17 @@ function AccessSummary({ billing }: { billing: StudentBilling }) {
   );
 }
 
-function Checkout({ billing }: { billing: StudentBilling }) {
+function Checkout({
+  billing,
+  requestedPlanId,
+}: {
+  billing: StudentBilling;
+  requestedPlanId?: string;
+}) {
+  // The plan picked on the pricing page (?plan=), if it is still on sale.
+  const requested = billing.plans.find((p) => p.id === requestedPlanId)?.id;
   const [planId, setPlanId] = useState<string | null>(
-    billing.pendingSubscription?.plan?.id ?? billing.plans[0]?.id ?? null,
+    requested ?? billing.pendingSubscription?.plan?.id ?? billing.plans[0]?.id ?? null,
   );
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<string | null>(null);

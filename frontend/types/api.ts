@@ -918,7 +918,13 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-export type NotificationPreferences = Partial<Record<NotificationType, boolean>>;
+/** GET /notifications: latest 30 items plus the total unread count. */
+export interface NotificationList {
+  items: NotificationItem[];
+  unread: number;
+}
+
+export type NotificationPreferences =Partial<Record<NotificationType, boolean>>;
 
 export interface LeaderboardEntry {
   rank: number;
