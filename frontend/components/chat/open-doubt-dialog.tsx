@@ -72,10 +72,12 @@ export function OpenDoubtDialog({
 
   const coursesList =
     learningData?.courses && learningData.courses.length > 0
-      ? learningData.courses.map((c) => ({
-          id: c.course.id,
-          title: c.course.title,
-        }))
+      ? learningData.courses
+          .filter((c) => c?.course)
+          .map((c) => ({
+            id: c.course.id,
+            title: c.course.title,
+          }))
       : allCourses.map((c) => ({ id: c.id, title: c.title }));
 
   const openMutation = useMutation({

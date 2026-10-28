@@ -157,12 +157,12 @@ export default async function LandingPage() {
                 {/* Greeting */}
                 <div className="mt-4 flex items-center justify-between">
                   <div>
-                    <h4 className="font-heading text-base font-bold text-foreground">
-                      {isLoggedIn ? "Welcome back, Student! 👋" : "Great job, Ali! 👋"}
-                    </h4>
-                    <p className="text-muted-foreground text-xs">
-                      {isLoggedIn ? "Ready to continue your lessons?" : "Ready for today's challenge?"}
-                    </p>
+                  <h4 className="font-heading text-base font-bold text-foreground">
+                    {isLoggedIn ? "Welcome back! 👋" : "Ready to start learning?"}
+                  </h4>
+                  <p className="text-muted-foreground text-xs">
+                    {isLoggedIn ? "Continue your lessons and track your progress." : "Create an account to access lessons, assignments, and mentor support."}
+                  </p>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
                     <Trophy className="size-3.5" /> 450 pts
