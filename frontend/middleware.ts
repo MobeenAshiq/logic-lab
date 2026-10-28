@@ -53,7 +53,8 @@ export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const portal = PORTALS.find((p) => pathname === p.prefix || pathname.startsWith(`${p.prefix}/`));
   const isMfaPage = pathname === "/mfa";
-  if (!portal && !isMfaPage) return NextResponse.next();
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  if (!portal && !isMfaPage && !isAuthPage) return NextResponse.next();
 
   const redirect = (path: string, setCookies: string[] = []) =>
     withCookies(NextResponse.redirect(new URL(path, req.url)), setCookies);
@@ -63,7 +64,10 @@ export async function middleware(req: NextRequest) {
     return redirect(`/login?${params.toString()}`, setCookies);
   };
 
-  if (!req.cookies.has("ll_access") && !req.cookies.has("ll_refresh")) return toLogin();
+  if (!req.cookies.has("ll_access") && !req.cookies.has("ll_refresh")) {
+    if (isAuthPage) return NextResponse.next();
+    return toLogin();
+  }
 
   let cookie = req.headers.get("cookie") ?? "";
   let setCookies: string[] = [];
@@ -83,11 +87,19 @@ export async function middleware(req: NextRequest) {
   }
 
   if (!res.ok) {
+    if (isAuthPage) return withCookies(NextResponse.next(), setCookies);
     const body = (await res.json().catch(() => ({}))) as { code?: string };
     return toLogin(body.code, setCookies);
   }
 
   const { user, mfa } = (await res.json()) as SessionResponse;
+
+  if (isAuthPage) {
+    const next = req.nextUrl.searchParams.get("next");
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+    const target = safeNext || home(user.role);
+    return redirect(target, setCookies);
+  }
 
   if (isMfaPage) {
     return mfa === "none"
@@ -111,5 +123,7 @@ export const config = {
     "/community/:path*",
     "/community",
     "/mfa",
+    "/login",
+    "/signup",
   ],
 };

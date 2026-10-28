@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthCard, FormAlert, GoogleButton, reasonMessage } from "@/components/auth/auth-ui";
@@ -12,7 +12,7 @@ import { Field, Spinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api/client";
-import { afterLoginPath, ME_KEY } from "@/lib/auth";
+import { afterLoginPath, ME_KEY, useMe } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import type { SessionResponse } from "@/types/api";
@@ -27,6 +27,7 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const queryClient = useQueryClient();
+  const { data: me } = useMe();
   const [error, setError] = useState<string | null>(
     reasonMessage(params.get("reason") ?? params.get("error")),
   );
@@ -35,6 +36,12 @@ function LoginForm() {
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    if (me) {
+      router.replace(afterLoginPath(me.user.role, me.mfa, params.get("next")));
+    }
+  }, [me, router, params]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);

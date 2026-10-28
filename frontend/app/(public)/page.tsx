@@ -17,6 +17,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { PlanCard } from "@/components/site/plan-card";
@@ -40,6 +41,9 @@ const bannerTone = {
 } as const;
 
 export default async function LandingPage() {
+  const jar = await cookies();
+  const isLoggedIn = jar.has("ll_access") || jar.has("ll_refresh");
+
   const [content, tracks, plans] = await Promise.all([
     serverApi<SiteContent>("/site-content"),
     serverApi<PublicTrack[]>("/tracks"),

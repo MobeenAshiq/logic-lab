@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthCard, FormAlert, GoogleButton } from "@/components/auth/auth-ui";
@@ -11,6 +11,7 @@ import { Field, Spinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api/client";
+import { portalHome, useMe } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 
@@ -29,11 +30,18 @@ type Values = z.infer<typeof schema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const { data: me } = useMe();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { fullName: "", email: "", password: "" },
   });
+
+  useEffect(() => {
+    if (me) {
+      router.replace(portalHome(me.user.role));
+    }
+  }, [me, router]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
