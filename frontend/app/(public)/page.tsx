@@ -104,8 +104,9 @@ export default async function LandingPage() {
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button size="lg" asChild className="h-11 px-6 font-semibold shadow-md">
-                <Link href={hero.ctaHref || "/signup"}>
-                  {hero.ctaText || t.site.hero.primaryCta} <ArrowRight className="size-4" />
+                <Link href={isLoggedIn ? "/student" : (hero.ctaHref || "/signup")}>
+                  {isLoggedIn ? "Go to Dashboard" : (hero.ctaText || t.site.hero.primaryCta)}{" "}
+                  <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="secondary" asChild className="h-11 px-6 font-semibold">
@@ -126,91 +127,101 @@ export default async function LandingPage() {
             </dl>
           </div>
 
-          {/* Right Hero Visual: Product Screenshot / Student Dashboard Mockup */}
+          {/* Right Hero Visual: Interactive Student Dashboard Mockup Preview */}
           <div className="relative mx-auto w-full max-w-md lg:col-span-5 lg:max-w-none">
-            <div className="card-hover border-border bg-card relative overflow-hidden rounded-2xl border p-5 shadow-xl">
-              {/* Top window bar */}
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full bg-danger/80" />
-                  <span className="size-2.5 rounded-full bg-warning/80" />
-                  <span className="size-2.5 rounded-full bg-success/80" />
-                  <span className="text-muted-foreground ml-2 text-xs font-mono font-medium">
-                    logiclab.pk/student
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
-                    <Flame className="size-3 fill-current" /> 3-day streak
-                  </span>
-                </div>
-              </div>
-
-              {/* Greeting */}
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <h4 className="font-heading text-base font-bold text-foreground">
-                    Great job, Ali! 👋
-                  </h4>
-                  <p className="text-muted-foreground text-xs">Ready for today&apos;s challenge?</p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                  <Trophy className="size-3.5" /> 450 pts
-                </span>
-              </div>
-
-              {/* Active Course Progress Card */}
-              <div className="bg-surface border-border mt-4 rounded-xl border p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center rounded-full bg-[#7C3AED]/10 px-2 py-0.5 text-[11px] font-semibold text-[#7C3AED]">
-                    Logic Building
-                  </span>
-                  <span className="text-muted-foreground text-xs font-medium">Lesson 4 of 12</span>
-                </div>
-                <h5 className="font-heading text-foreground mt-2 text-sm font-bold">
-                  Problem Solving & Flowcharts
-                </h5>
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold">
-                  <span className="text-muted-foreground font-normal">Progress</span>
-                  <span className="text-primary font-bold">65%</span>
-                </div>
-                <div className="bg-muted mt-1.5 h-1.5 w-full overflow-hidden rounded-full">
-                  <div className="bg-primary h-full w-[65%] rounded-full" />
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-muted-foreground text-[11px]">Mentor: Bilal Ahmed</span>
-                  <span className="text-primary text-xs font-semibold hover:underline cursor-pointer flex items-center gap-1">
-                    Resume <ArrowRight className="size-3" />
-                  </span>
-                </div>
-              </div>
-
-              {/* Live Class Reminder */}
-              <div className="border-border/80 bg-primary/5 mt-3 flex items-center justify-between rounded-xl border p-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-                    <Video className="size-4" />
-                  </span>
-                  <div>
-                    <p className="font-heading text-foreground text-xs font-bold">
-                      Live Q&A Office Hours
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">Today at 7:00 PM PKT</p>
+            <Link
+              href={isLoggedIn ? "/student" : "/courses"}
+              className="group block"
+            >
+              <div className="card-hover border-border bg-card relative overflow-hidden rounded-2xl border p-5 shadow-xl transition-all group-hover:border-primary/50">
+                {/* Top window bar */}
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 rounded-full bg-danger/80" />
+                    <span className="size-2.5 rounded-full bg-warning/80" />
+                    <span className="size-2.5 rounded-full bg-success/80" />
+                    <span className="text-muted-foreground ml-2 text-xs font-mono font-medium">
+                      logiclab.pk/student
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      {isLoggedIn ? "Your Dashboard" : "Dashboard Preview"}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
+                      <Flame className="size-3 fill-current" /> 3-day streak
+                    </span>
                   </div>
                 </div>
-                <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
-                  Upcoming
-                </Badge>
-              </div>
 
-              {/* Verified Feedback Badge */}
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground border border-border/50">
-                <ShieldCheck className="size-4 text-success shrink-0" />
-                <span className="truncate">
-                  Assignment graded by Mentor Hamza · <strong>95/100</strong>
-                </span>
+                {/* Greeting */}
+                <div className="mt-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-heading text-base font-bold text-foreground">
+                      {isLoggedIn ? "Welcome back, Student! 👋" : "Great job, Ali! 👋"}
+                    </h4>
+                    <p className="text-muted-foreground text-xs">
+                      {isLoggedIn ? "Ready to continue your lessons?" : "Ready for today's challenge?"}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    <Trophy className="size-3.5" /> 450 pts
+                  </span>
+                </div>
+
+                {/* Active Course Progress Card */}
+                <div className="bg-surface border-border mt-4 rounded-xl border p-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full bg-[#7C3AED]/10 px-2 py-0.5 text-[11px] font-semibold text-[#7C3AED]">
+                      Logic Building
+                    </span>
+                    <span className="text-muted-foreground text-xs font-medium">Lesson 4 of 12</span>
+                  </div>
+                  <h5 className="font-heading text-foreground mt-2 text-sm font-bold">
+                    Problem Solving & Flowcharts
+                  </h5>
+                  <div className="mt-3 flex items-center justify-between text-xs font-semibold">
+                    <span className="text-muted-foreground font-normal">Progress</span>
+                    <span className="text-primary font-bold">65%</span>
+                  </div>
+                  <div className="bg-muted mt-1.5 h-1.5 w-full overflow-hidden rounded-full">
+                    <div className="bg-primary h-full w-[65%] rounded-full" />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-muted-foreground text-[11px]">Mentor: Bilal Ahmed</span>
+                    <span className="text-primary text-xs font-semibold hover:underline flex items-center gap-1">
+                      {isLoggedIn ? "Go to Course" : "Resume"} <ArrowRight className="size-3" />
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Class Reminder */}
+                <div className="border-border/80 bg-primary/5 mt-3 flex items-center justify-between rounded-xl border p-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+                      <Video className="size-4" />
+                    </span>
+                    <div>
+                      <p className="font-heading text-foreground text-xs font-bold">
+                        Live Q&A Office Hours
+                      </p>
+                      <p className="text-muted-foreground text-[11px]">Today at 7:00 PM PKT</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
+                    Upcoming
+                  </Badge>
+                </div>
+
+                {/* Verified Feedback Badge */}
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground border border-border/50">
+                  <ShieldCheck className="size-4 text-success shrink-0" />
+                  <span className="truncate">
+                    Assignment graded by Mentor Hamza · <strong>95/100</strong>
+                  </span>
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -490,7 +501,9 @@ export default async function LandingPage() {
               {t.site.pricing.empty}
             </p>
             <Button asChild className="mt-5 font-semibold">
-              <Link href="/signup">Start 7-Day Free Trial</Link>
+              <Link href={isLoggedIn ? "/student" : "/signup"}>
+                {isLoggedIn ? "Go to Dashboard" : "Start 7-Day Free Trial"}
+              </Link>
             </Button>
           </div>
         )}
@@ -549,7 +562,9 @@ export default async function LandingPage() {
               asChild
               className="h-11 px-7 font-bold text-foreground shadow-sm"
             >
-              <Link href="/signup">{t.common.nav.startTrial}</Link>
+              <Link href={isLoggedIn ? "/student" : "/signup"}>
+                {isLoggedIn ? "Go to Dashboard" : t.common.nav.startTrial}
+              </Link>
             </Button>
             <Button
               size="lg"
