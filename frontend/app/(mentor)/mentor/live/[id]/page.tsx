@@ -45,7 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { t } from "@/lib/i18n";
-import type { AdminCourseTree, LiveSessionDetail } from "@/types/api";
+import type { AdminCourse, LiveSessionDetail } from "@/types/api";
 
 export default function MentorLiveSessionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -72,7 +72,7 @@ export default function MentorLiveSessionDetailPage() {
   // Load course details to get modules for lesson publishing
   const { data: courseTree } = useQuery({
     queryKey: ["course-tree", session?.course?.id],
-    queryFn: () => api<AdminCourseTree>(`/admin/content/courses/${session!.course.id}`),
+    queryFn: () => api<AdminCourse>(`/admin/content/courses/${session!.course.id}`),
     enabled: Boolean(session?.course?.id),
   });
 
