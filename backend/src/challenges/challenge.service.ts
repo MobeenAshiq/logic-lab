@@ -1,12 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ChallengeDifficulty, Prisma, Role } from '@prisma/client';
-import { getQuickJS } from 'quickjs-emscripten';
 import { AuthUser } from '../auth/auth.types';
 import { AppException } from '../common/app-exception';
 import { SubscriptionsService } from '../billing/subscriptions.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PointsService } from '../points/points.service';
 import { pktDay } from '../learning/study-time';
+import { runJavaScriptHiddenTests } from './javascript-hidden-runner';
 import { runPythonHiddenTests } from './python-hidden-runner';
 import { CreateChallengeInput, SubmitChallengeInput } from './challenge.schemas';
 
@@ -17,44 +17,15 @@ function isTestCase(value: unknown): value is TestCase {
   return Boolean(value && typeof value === 'object' && Array.isArray((value as TestCase).input) && 'expected' in value);
 }
 
-function jsonEqual(actual: unknown, expected: unknown) {
-  return JSON.stringify(actual) === JSON.stringify(expected);
+function testCasesOf(value: Prisma.JsonValue): TestCase[] {
+  if (!Array.isArray(value)) return [];
+  const tests: TestCase[] = [];
+  for (const item of value) if (isTestCase(item)) tests.push(item);
+  return tests;
 }
 
-async function runJavaScriptTests(code: string, tests: TestCase[]): Promise<boolean[]> {
-  const quickjs = await getQuickJS();
-  const runtime = quickjs.newRuntime();
-  runtime.setMemoryLimit(32 * 1024 * 1024);
-  runtime.setTimeLimit(100);
-  const context = runtime.newContext();
-  const results: boolean[] = [];
-  try {
-    for (const test of tests) {
-      const result = context.evalCode(
-        `(() => { const solution = (${code}); const result = solution(...${JSON.stringify(test.input)}); return JSON.stringify(result); })()`,
-      );
-      if (result.error) {
-        result.error.dispose();
-        results.push(false);
-        continue;
-      }
-      const output = context.dump(result.value);
-      result.value.dispose();
-      if (typeof output !== 'string') {
-        results.push(false);
-        continue;
-      }
-      try {
-        results.push(jsonEqual(JSON.parse(output) as unknown, test.expected));
-      } catch {
-        results.push(false);
-      }
-    }
-  } finally {
-    context.dispose();
-    runtime.dispose();
-  }
-  return results;
+function jsonEqual(actual: unknown, expected: unknown) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
 @Injectable()
@@ -138,8 +109,8 @@ export class ChallengeService {
     if (!(await this.subscriptions.hasTrackAccess(auth.id, challenge.trackId))) {
       throw new AppException(HttpStatus.FORBIDDEN, 'SUBSCRIPTION_REQUIRED');
     }
-    const visibleTests = (Array.isArray(challenge.testCases) ? challenge.testCases : []).filter(isTestCase);
-    const hiddenTests = (Array.isArray(challenge.hiddenTests) ? challenge.hiddenTests : []).filter(isTestCase);
+    const visibleTests = testCasesOf(challenge.testCases);
+    const hiddenTests = testCasesOf(challenge.hiddenTests);
     const total = visibleTests.length + hiddenTests.length;
     if (!total || total > 80) throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, 'CHALLENGE_TESTS_INVALID');
     let passedTests = 0;
@@ -152,7 +123,7 @@ export class ChallengeService {
       }
     } else {
       try {
-        passedTests = (await runJavaScriptTests(input.code, allTests)).filter(Boolean).length;
+        passedTests = (await runJavaScriptHiddenTests(input.code, allTests)).filter(Boolean).length;
       } catch {
         passedTests = 0;
       }

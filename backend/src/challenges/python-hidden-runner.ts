@@ -2,8 +2,8 @@ import { Worker } from 'node:worker_threads';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
-const require = createRequire(__filename);
-const PYODIDE_MODULE_URL = pathToFileURL(require.resolve('pyodide/pyodide.mjs')).href;
+const nodeRequire = createRequire(__filename);
+const PYODIDE_MODULE_URL = pathToFileURL(nodeRequire.resolve('pyodide/pyodide.mjs')).href;
 const RUNNER = `
 const { parentPort, workerData } = require('node:worker_threads');
 (async () => {
