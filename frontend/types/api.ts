@@ -667,6 +667,7 @@ export interface PersonRef {
   id: string;
   email: string;
   fullName: string;
+  avatarUrl?: string | null;
 }
 
 export interface GradingItem {
@@ -992,7 +993,7 @@ export interface LiveSessionAttendance {
   durationMinutes: number | null;
 }
 
-export interface LiveSessionDetail extends LiveSession {
+export interface LiveSessionDetail extends Omit<LiveSession, "attendance"> {
   attendance: LiveSessionAttendance[];
 }
 

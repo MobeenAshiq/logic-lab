@@ -32,6 +32,7 @@ export const SETTING_SCHEMAS = {
   point_rules: z.strictObject({
     quiz_passed: z.number().int().min(-1000).max(1000),
     assignment_on_time: z.number().int().min(-1000).max(1000),
+    challenge_solved: z.number().int().min(-1000).max(1000).default(10),
     accepted_answer: z.number().int().min(-1000).max(1000),
     streak_7_days: z.number().int().min(-1000).max(1000),
     live_class_attended: z.number().int().min(-1000).max(1000),
@@ -63,6 +64,7 @@ export const SETTING_DEFAULTS: Settings = {
   point_rules: {
     quiz_passed: 20,
     assignment_on_time: 15,
+    challenge_solved: 10,
     accepted_answer: 10,
     streak_7_days: 25,
     live_class_attended: 5,

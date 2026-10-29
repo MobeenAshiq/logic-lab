@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { t } from "@/lib/i18n";
-import type { LiveSession, MentorAssignedCourse } from "@/types/api";
+import type { LiveSession, TeachCourse } from "@/types/api";
 
 export function ScheduleLiveDialog({
   trigger,
@@ -42,7 +42,7 @@ export function ScheduleLiveDialog({
 
   const { data: courses = [] } = useQuery({
     queryKey: ["teach-courses"],
-    queryFn: () => api<MentorAssignedCourse[]>("/teach/courses"),
+    queryFn: () => api<TeachCourse[]>("/teach/courses"),
   });
 
   const scheduleMutation = useMutation({

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
+  Code2,
   FileClock,
   GraduationCap,
   type LucideIcon,
@@ -65,6 +66,7 @@ function StatCard({
 const links: { href: string; icon: LucideIcon; title: string; body: string }[] = [
   { href: "/admin/content", icon: GraduationCap, ...s.links.content },
   { href: "/admin/content/site", icon: Megaphone, ...s.links.site },
+  { href: "/admin/challenges", icon: Code2, title: "Daily challenges", body: "Publish daily coding exercises by track." },
   { href: "/admin/billing", icon: Tags, ...s.links.plans },
   { href: "/admin/settings", icon: Settings, ...s.links.settings },
   { href: "/admin/audit", icon: FileClock, ...s.links.audit },

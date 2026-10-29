@@ -73,7 +73,7 @@ export class PointsService {
       });
       if (profile?.role !== Role.student) return null;
       const rules = await this.settings.get('point_rules');
-      const points = rules[reason];
+      const points = rules[reason as keyof typeof rules];
       if (!points) return null;
       const season = await this.currentSeason();
       const event = await this.prisma.pointEvent.create({
