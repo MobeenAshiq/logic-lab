@@ -68,6 +68,7 @@ model User {
   mentoredLiveSessions LiveSession[]        @relation("LiveSessionMentor")
   attendance        Attendance[]
   aiUsage           AiUsage[]
+  challengeSubmissions ChallengeSubmission[]
 
   @@map("users")
 }
@@ -200,6 +201,7 @@ model Course {
   mentors       CourseMentor[]
   enrollments   Enrollment[]
   questionBank  Question[]
+  challenges    Challenge[]
   conversations Conversation[]
   liveSessions  LiveSession[]
 
@@ -956,10 +958,63 @@ enum ConversationStatus {
 enum PointReason {
   quiz_passed
   assignment_on_time
+  challenge_solved
   accepted_answer
   streak_7_days
   live_class_attended
   plagiarism_confirmed
+}
+
+enum ChallengeDifficulty {
+  easy
+  medium
+  hard
+}
+
+/// One published daily coding challenge per track and Pakistan-local date.
+model Challenge {
+  id          String               @id @default(uuid()) @db.Uuid
+  trackId     String               @map("track_id") @db.Uuid
+  title       String
+  difficulty  ChallengeDifficulty @default(easy)
+  statement   String
+  starterCode String               @default("") @map("starter_code")
+  testCases   Json                 @default("[]") @map("test_cases")
+  hiddenTests Json                 @default("[]") @map("hidden_tests")
+  publishDate DateTime             @map("publish_date") @db.Date
+  createdBy   String?              @map("created_by") @db.Uuid
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+
+  track       Track                  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  submissions ChallengeSubmission[]
+
+  @@unique([trackId, publishDate])
+  @@index([publishDate])
+  @@map("challenges")
+}
+
+/// Latest attempt per learner/challenge; points are idempotent by challenge ID.
+model ChallengeSubmission {
+  id            String    @id @default(uuid()) @db.Uuid
+  challengeId   String    @map("challenge_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  language      String
+  code          String    @default("")
+  passed        Boolean   @default(false)
+  passedTests   Int       @default(0) @map("passed_tests")
+  totalTests    Int       @default(0) @map("total_tests")
+  attempts      Int       @default(0)
+  solvedAt      DateTime? @map("solved_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId, solvedAt])
+  @@map("challenge_submissions")
 }
 
 enum NotificationType {

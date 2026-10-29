@@ -7,6 +7,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { ChatModule } from './chat/chat.module';
+import { ChallengeModule } from './challenges/challenge.module';
 import { CommunityModule } from './community/community.module';
 import { ContentModule } from './content/content.module';
 import { LearningModule } from './learning/learning.module';
@@ -44,6 +45,7 @@ import { UsersModule } from './users/users.module';
     AssessmentsModule,
     CommunityModule,
     ChatModule,
+    ChallengeModule,
     LiveClassesModule,
   ],
   controllers: [AppController, PortalsController],

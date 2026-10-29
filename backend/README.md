@@ -193,6 +193,16 @@ frontend environment. The student daily request cap defaults to 30 and can be ch
 admin under Settings. Submission AI/similarity signals are mentor review hints only and never
 apply an automatic penalty.
 
+### Phase 10: daily coding challenges
+
+Admins can publish one challenge per track and Pakistan-local date at `/admin/challenges`.
+Students with access to that track use `/student/challenges`; visible tests run in a Web Worker,
+and submissions are rechecked against both visible and hidden tests in server-side QuickJS
+(JavaScript) or a short-lived Pyodide worker (Python) before a solve is saved. Challenge points
+are awarded once per student/challenge through the existing unique point-event source key.
+The AI/ML Python notebook at `/student/notebook` loads Pyodide, pandas and numpy on demand in a
+Web Worker and retains its runtime between cells; execution workers are terminated on timeout.
+
 **Phase 1 changes:** role and status changes now always require a `reason`.
 `/admin/users` can also filter by `status`. A mentor whose role changes loses their course
 assignments.

@@ -117,6 +117,11 @@ export const en = {
     AI_INVALID_RESPONSE: 'The AI could not create a usable response. Please try again.',
     AI_TEMPORARILY_UNAVAILABLE:
       'AI features are temporarily unavailable. Please try again shortly.',
+    CHALLENGE_DATE_INVALID: 'That challenge date is not available.',
+    CHALLENGE_NOT_FOUND: 'Daily challenge not found.',
+    CHALLENGE_NOT_OPEN: 'This challenge is not open for submissions.',
+    CHALLENGE_TESTS_INVALID: 'This challenge is not configured correctly.',
+    CHALLENGE_TEST_COUNT_MISMATCH: 'The visible test list does not match the challenge.',
   },
   email: {
     verifySubject: 'Your LogicLab verification code',
@@ -157,6 +162,7 @@ export const en = {
     pointReasons: {
       quiz_passed: 'quiz passed',
       assignment_on_time: 'assignment submitted on time',
+      challenge_solved: 'daily challenge solved',
       accepted_answer: 'answer accepted',
       streak_7_days: '7-day learning streak',
       live_class_attended: 'live class attended',
