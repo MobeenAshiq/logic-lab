@@ -6,6 +6,7 @@ CREATE TABLE "challenges" (
     "track_id" UUID NOT NULL,
     "title" TEXT NOT NULL,
     "difficulty" "ChallengeDifficulty" NOT NULL DEFAULT 'easy',
+    "graded" BOOLEAN NOT NULL DEFAULT false,
     "statement" TEXT NOT NULL,
     "starter_code" TEXT NOT NULL DEFAULT '',
     "test_cases" JSONB NOT NULL DEFAULT '[]',

@@ -14,14 +14,17 @@ function getWorker() {
     }
     self.onmessage = async ({ data }) => {
       const { id, code } = data;
+      const send = self.postMessage.bind(self);
       try {
         const pyodide = await getPyodide();
         await pyodide.loadPackage(['numpy', 'pandas']);
-        self.postMessage({ id, phase: 'ready' });
+        send({ id, phase: 'ready' });
+        for (const key of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts']) { try { Object.defineProperty(self, key, { value: undefined, configurable: false, writable: false }); } catch {} }
+        try { Object.defineProperty(self, 'postMessage', { value: () => {}, configurable: false, writable: false }); Object.defineProperty(self, 'close', { value: () => {}, configurable: false, writable: false }); } catch {}
         pyodide.globals.set('__notebook_code', code);
         const output = await pyodide.runPythonAsync("import contextlib, io, json\\nif '__notebook_scope' not in globals(): __notebook_scope = {}\\n__notebook_scope.pop('result', None)\\n__stdout = io.StringIO()\\nwith contextlib.redirect_stdout(__stdout):\\n    exec(__notebook_code, __notebook_scope)\\n__result = __notebook_scope.get('result', None)\\ndef __json_default(value):\\n    if hasattr(value, 'to_dict'): return value.to_dict(orient='records')\\n    if hasattr(value, 'tolist'): return value.tolist()\\n    return str(value)\\njson.dumps({'stdout': __stdout.getvalue(), 'result': __result}, default=__json_default)");
-        self.postMessage({ id, output: output.toString() });
-      } catch (error) { self.postMessage({ id, error: String(error) }); }
+        send({ id, output: output.toString() });
+      } catch (error) { send({ id, error: String(error) }); }
     };
   `;
   const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));

@@ -1,16 +1,23 @@
 import { Worker } from 'node:worker_threads';
 import { pathToFileURL } from 'node:url';
+import { dirname } from 'node:path';
 import { createRequire } from 'node:module';
 
 const nodeRequire = createRequire(__filename);
 const PYODIDE_MODULE_URL = pathToFileURL(nodeRequire.resolve('pyodide/pyodide.mjs')).href;
+const PYODIDE_INDEX_URL = `${dirname(nodeRequire.resolve('pyodide/pyodide.mjs'))}/`;
 const RUNNER = `
 const { parentPort, workerData } = require('node:worker_threads');
 (async () => {
   try {
     const { loadPyodide } = await import(workerData.pyodideModuleUrl);
-    const pyodide = await loadPyodide({ indexURL: new URL('.', workerData.pyodideModuleUrl).href });
+    const pyodide = await loadPyodide({ indexURL: workerData.pyodideIndexUrl });
     await pyodide.loadPackage(['numpy', 'pandas']);
+    const host = globalThis;
+    for (const key of ['process', 'require', 'Buffer', 'fetch', 'WebSocket', 'XMLHttpRequest']) {
+      Reflect.deleteProperty(host, key);
+      host[key] = undefined;
+    }
     parentPort.postMessage({ ok: true, phase: 'ready' });
     pyodide.globals.set('__student_code', workerData.code);
     pyodide.globals.set('__tests_json', JSON.stringify(workerData.tests));
@@ -30,7 +37,7 @@ export function runPythonHiddenTests(
   return new Promise((resolve, reject) => {
     const worker = new Worker(RUNNER, {
       eval: true,
-      workerData: { code, tests, pyodideModuleUrl: PYODIDE_MODULE_URL },
+      workerData: { code, tests, pyodideModuleUrl: PYODIDE_MODULE_URL, pyodideIndexUrl: PYODIDE_INDEX_URL },
       resourceLimits: { maxOldGenerationSizeMb: 256, maxYoungGenerationSizeMb: 64 },
     });
     let settled = false;

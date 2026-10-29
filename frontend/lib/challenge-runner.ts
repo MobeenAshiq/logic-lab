@@ -14,16 +14,19 @@ function workerFor(language: ChallengeLanguage) {
   const source = language === "javascript" ? `
     self.onmessage = ({ data }) => {
       const { id, code, tests } = data;
+      const send = self.postMessage.bind(self);
       try {
-        self.postMessage({ id, phase: 'ready' });
+        send({ id, phase: 'ready' });
+        for (const key of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts']) { try { Object.defineProperty(self, key, { value: undefined, configurable: false, writable: false }); } catch {} }
+        try { Object.defineProperty(self, 'postMessage', { value: () => {}, configurable: false, writable: false }); Object.defineProperty(self, 'close', { value: () => {}, configurable: false, writable: false }); } catch {}
         const canonical = (value) => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map((key) => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}' : JSON.stringify(value);
         const fn = new Function('args', '"use strict"; const solution = (' + code + '); return solution(...args);');
         const results = tests.map((test) => {
           try { const result = fn(test.input); return { pass: canonical(result) === canonical(test.expected), output: JSON.stringify(result) }; }
           catch (error) { return { pass: false, output: String(error) }; }
         });
-        self.postMessage({ id, results });
-      } catch (error) { self.postMessage({ id, error: String(error) }); }
+        send({ id, results });
+      } catch (error) { send({ id, error: String(error) }); }
     };
   ` : `
     let pyodidePromise;
@@ -33,21 +36,24 @@ function workerFor(language: ChallengeLanguage) {
     }
     self.onmessage = async ({ data }) => {
       const { id, code, tests, packages } = data;
+      const send = self.postMessage.bind(self);
       try {
         const pyodide = await getPyodide();
         if (packages) await pyodide.loadPackage(['numpy', 'pandas']);
-        self.postMessage({ id, phase: 'ready' });
+        send({ id, phase: 'ready' });
+        for (const key of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts']) { try { Object.defineProperty(self, key, { value: undefined, configurable: false, writable: false }); } catch {} }
+        try { Object.defineProperty(self, 'postMessage', { value: () => {}, configurable: false, writable: false }); Object.defineProperty(self, 'close', { value: () => {}, configurable: false, writable: false }); } catch {}
         const canonical = (value) => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map((key) => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}' : JSON.stringify(value);
         const results = [];
         for (const test of tests) {
           pyodide.globals.set('__challenge_code', code);
           pyodide.globals.set('__challenge_input', JSON.stringify(test.input));
-          const output = await pyodide.runPythonAsync("import json\\nnamespace = {}\\nexec(__challenge_code, namespace)\\njson.dumps(namespace['solution'](*json.loads(__challenge_input)))");
+          const output = await pyodide.runPythonAsync("import json\\ndef __json_default(value):\\n    if hasattr(value, 'to_dict'): return value.to_dict(orient='records')\\n    if hasattr(value, 'tolist'): return value.tolist()\\n    return str(value)\\nnamespace = {}\\nexec(__challenge_code, namespace)\\njson.dumps(namespace['solution'](*json.loads(__challenge_input)), default=__json_default)");
           const actual = JSON.parse(output.toString());
           results.push({ pass: canonical(actual) === canonical(test.expected), output: JSON.stringify(actual) });
         }
-        self.postMessage({ id, results });
-      } catch (error) { self.postMessage({ id, error: String(error) }); }
+        send({ id, results });
+      } catch (error) { send({ id, error: String(error) }); }
     };
   `;
   const blob = new Blob([source], { type: "text/javascript" });

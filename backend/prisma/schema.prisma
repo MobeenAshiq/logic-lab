@@ -977,6 +977,7 @@ model Challenge {
   trackId     String               @map("track_id") @db.Uuid
   title       String
   difficulty  ChallengeDifficulty @default(easy)
+  graded      Boolean              @default(false)
   statement   String
   starterCode String               @default("") @map("starter_code")
   testCases   Json                 @default("[]") @map("test_cases")

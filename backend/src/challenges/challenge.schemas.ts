@@ -10,6 +10,7 @@ export const createChallengeSchema = z.strictObject({
   trackId: z.uuid(),
   title: z.string().trim().min(3).max(160),
   difficulty: z.enum(ChallengeDifficulty).default(ChallengeDifficulty.easy),
+  graded: z.boolean().default(false),
   statement: z.string().trim().min(10).max(12_000),
   starterCode: z.string().max(20_000).default(''),
   tests: z.array(testCaseSchema).min(1).max(30),

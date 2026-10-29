@@ -51,6 +51,7 @@ export class ChallengeService {
         trackId: input.trackId,
         title: input.title,
         difficulty: input.difficulty as ChallengeDifficulty,
+        graded: input.graded,
         statement: input.statement,
         starterCode: input.starterCode,
         testCases: input.tests as Prisma.InputJsonValue,
@@ -87,6 +88,7 @@ export class ChallengeService {
         id: challenge.id,
         title: challenge.title,
         difficulty: challenge.difficulty,
+        graded: challenge.graded,
         statement: challenge.statement,
         starterCode: challenge.starterCode,
         tests: Array.isArray(challenge.testCases) ? challenge.testCases : [],
@@ -110,7 +112,8 @@ export class ChallengeService {
     const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) throw new AppException(HttpStatus.NOT_FOUND, 'CHALLENGE_NOT_FOUND');
     const today = pktDay();
-    if (challenge.publishDate.getTime() > today.getTime() || challenge.publishDate.getTime() < today.getTime() - 365 * PKT_DAY_MS) {
+    const challengeDay = new Date(Date.UTC(challenge.publishDate.getUTCFullYear(), challenge.publishDate.getUTCMonth(), challenge.publishDate.getUTCDate()));
+    if (challengeDay.getTime() > today.getTime() || challengeDay.getTime() < today.getTime() - 365 * PKT_DAY_MS) {
       throw new AppException(HttpStatus.FORBIDDEN, 'CHALLENGE_NOT_OPEN');
     }
     if (!(await this.subscriptions.hasTrackAccess(auth.id, challenge.trackId))) {
