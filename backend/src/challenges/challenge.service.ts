@@ -138,7 +138,7 @@ export class ChallengeService {
         passed, passedTests, totalTests: total, attempts: 1, solvedAt: passed ? new Date() : null,
       },
       update: {
-        language: input.language, code: input.code, passed, passedTests, totalTests: total,
+        language: input.language, code: input.code, passed: Boolean(existing?.solvedAt) || passed, passedTests, totalTests: total,
         attempts: { increment: 1 }, ...(firstSolve ? { solvedAt: new Date() } : {}),
       },
     });
