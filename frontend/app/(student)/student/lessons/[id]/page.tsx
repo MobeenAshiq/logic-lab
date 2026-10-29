@@ -14,6 +14,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { AssignmentPanel } from "@/components/assessments/assignment-panel";
+import { AiTutorPanel } from "@/components/ai/ai-tutor-panel";
+import { PracticeCodeReview } from "@/components/ai/practice-code-review";
 import { QuizPanel } from "@/components/assessments/quiz-panel";
 import { QuestionPanel } from "@/components/learning/question-panel";
 import { VideoPlayer, type VideoPlayerHandle } from "@/components/learning/video-player";
@@ -209,6 +211,9 @@ function LessonView({ lesson: l }: { lesson: LearnLesson }) {
           <AssignmentPanel lessonId={l.id} courseSlug={l.course.slug} isStaff={l.isStaff} />
         )}
       </div>
+
+      {!l.isStaff && <AiTutorPanel lessonId={l.id} />}
+      {!l.isStaff && (l.type === "article" || l.type === "video") && <PracticeCodeReview lessonId={l.id} />}
 
       <div className="mt-6 flex flex-col gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm">

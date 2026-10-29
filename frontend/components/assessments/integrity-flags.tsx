@@ -17,6 +17,9 @@ export function IntegrityFlagsList({
   if (flags?.fastTyping) items.push(tf.fastTyping(flags.fastestCharsPer10s ?? 0));
   if (flags?.pasteAttempts) items.push(tf.paste(flags.pasteAttempts));
   if (flags?.contentMismatch) items.push(tf.mismatch);
+  const aiReview = flags?.aiReview;
+  if (aiReview?.similarity) items.push(`Possible similarity with another submission (${Math.round(aiReview.similarity.score * 100)}%). Compare manually.`);
+  if (aiReview?.authorship?.concern) items.push(`AI-writing signal (${Math.round(aiReview.authorship.confidence * 100)}% model confidence): ${aiReview.authorship.rationale || "uncertain style indicator"}`);
   if (tabSwitches) items.push(tf.tabSwitches(tabSwitches));
 
   return (
@@ -39,7 +42,7 @@ export function IntegrityFlagsList({
           {tf.stats(flags.typedChars, flags.eventCount ?? 0)}
         </p>
       )}
-      {items.length > 0 && <p className="text-muted-foreground text-xs">{tf.note}</p>}
+      {items.length > 0 && <p className="text-muted-foreground text-xs">{tf.note} AI and similarity indicators are uncertain review aids only; they never trigger an automatic penalty.</p>}
     </div>
   );
 }

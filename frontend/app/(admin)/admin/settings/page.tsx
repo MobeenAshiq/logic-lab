@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Smartphone } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -15,12 +15,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
-import { applyFormErrors } from "@/lib/errors";
+import { applyFormErrors, toastError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import type { PaymentInstructions } from "@/types/api";
 
 const s = t.admin.settings;
 const KEY = ["admin", "settings", "payment_instructions"];
+const AI_LIMIT_KEY = ["admin", "settings", "ai_daily_limit"];
 const NUMBER_RE = /^03\d{2}-?\d{7}$/;
 const IBAN_RE = /^PK\d{2}[A-Z]{4}\d{16}$/;
 
@@ -140,11 +141,19 @@ function MethodCard({
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
+  const [aiLimit, setAiLimit] = useState(30);
   const query = useQuery({
     queryKey: KEY,
     queryFn: () => api<PaymentInstructions>("/admin/settings/payment_instructions"),
   });
   const form = useForm<Values>({ resolver: zodResolver(schema) });
+  const aiLimitQuery = useQuery({
+    queryKey: AI_LIMIT_KEY,
+    queryFn: () => api<{ studentMessages: number }>("/admin/settings/ai_daily_limit"),
+  });
+  useEffect(() => {
+    if (aiLimitQuery.data) setAiLimit(aiLimitQuery.data.studentMessages);
+  }, [aiLimitQuery.data]);
 
   useEffect(() => {
     if (query.data) form.reset(toForm(query.data));
@@ -164,6 +173,14 @@ export default function AdminSettingsPage() {
       applyFormErrors(err, (field, error) =>
         form.setError(API_FIELD[String(field)] ?? "root", error),
       ),
+  });
+  const aiLimitMutation = useMutation({
+    mutationFn: () => api<{ studentMessages: number }>("/admin/settings/ai_daily_limit", { method: "PUT", body: { studentMessages: aiLimit } }),
+    onSuccess: (data) => {
+      toast.success("AI daily limit saved.");
+      queryClient.setQueryData(AI_LIMIT_KEY, data);
+    },
+    onError: toastError,
   });
 
   const errors = form.formState.errors;
@@ -254,6 +271,23 @@ export default function AdminSettingsPage() {
                 {t.common.actions.save}
               </Button>
             </div>
+          </form>
+        </CardContent>
+      </Card>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>AI daily usage limit</CardTitle>
+          <CardDescription>Maximum tutor and practice-code-review requests per student each UTC day. Set to 0 to disable student AI requests.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); aiLimitMutation.mutate(); }}>
+            <Field label="Messages per student per day" htmlFor="ai-daily-limit" hint="Allowed range: 0–500">
+              <Input id="ai-daily-limit" type="number" min={0} max={500} step={1} value={aiLimit} onChange={(event) => setAiLimit(Number(event.target.value))} disabled={aiLimitQuery.isLoading || aiLimitQuery.isError} />
+            </Field>
+            <Button type="submit" disabled={aiLimitMutation.isPending || !Number.isInteger(aiLimit) || aiLimit < 0 || aiLimit > 500}>
+              {aiLimitMutation.isPending && <Spinner />}{t.common.actions.save}
+            </Button>
+            {aiLimitQuery.isError && <p className="text-destructive text-sm">Could not load the current AI limit.</p>}
           </form>
         </CardContent>
       </Card>

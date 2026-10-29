@@ -23,6 +23,7 @@ import {
 } from './assessments.schemas';
 import { asEvents, computeFlags, MAX_EVENTS, TypingEvent } from './integrity';
 import { StaffAccessService } from './staff-access.service';
+import { AiService } from './ai.service';
 
 function criteriaOf(
   rubric: { criteria: Prisma.JsonValue } | null,
@@ -42,6 +43,7 @@ export class AssignmentsService {
     private readonly points: PointsService,
     private readonly notifications: NotificationsService,
     private readonly audit: AuditService,
+    private readonly ai: AiService,
   ) {}
 
   // ---------------------------------------------------------------- builder
@@ -199,6 +201,7 @@ export class AssignmentsService {
         flags: flags as unknown as Prisma.InputJsonObject,
       },
     });
+    void this.ai.inspectSubmission(sub.id);
     await this.progress.markComplete(
       auth.id,
       lessonId,

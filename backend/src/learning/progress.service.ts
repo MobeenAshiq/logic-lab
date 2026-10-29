@@ -262,7 +262,96 @@ export class ProgressService {
         0,
       continueLearning,
       courses,
+      recommendations: await this.weakTopicRecommendations(userId),
     };
+  }
+
+  private async weakTopicRecommendations(userId: string) {
+    const attempts = await this.prisma.quizAttempt.findMany({
+      where: { userId, status: 'graded' },
+      orderBy: { submittedAt: 'desc' },
+      take: 50,
+      include: {
+        quiz: {
+          include: {
+            lesson: { include: { module: { include: { course: true } } } },
+            questions: { include: { question: true } },
+          },
+        },
+      },
+    });
+    const topicScores = new Map<string, { correct: number; total: number; courseIds: Set<string> }>();
+    const stopWords = new Set(['about', 'after', 'again', 'answer', 'apply', 'based', 'being', 'between', 'could', 'create', 'explain', 'following', 'given', 'their', 'there', 'these', 'those', 'using', 'which', 'where', 'write', 'would']);
+
+    for (const attempt of attempts) {
+      const answers = (attempt.answers ?? {}) as Record<string, { optionIds?: string[]; text?: string }>;
+      const manual = (attempt.manualScores ?? {}) as Record<string, number>;
+      for (const { question } of attempt.quiz.questions) {
+        if (!attempt.questionIds.includes(question.id)) continue;
+        const answer = answers[question.id];
+        let score: number | null = null;
+        if (question.type === 'mcq') {
+          const chosen = [...(answer?.optionIds ?? [])].sort();
+          const correct = [...question.correctOptionIds].sort();
+          score = chosen.length === correct.length && chosen.every((id, i) => id === correct[i]) ? 1 : 0;
+        } else if (typeof manual[question.id] === 'number') {
+          score = question.points > 0 ? Math.max(0, Math.min(1, manual[question.id] / question.points)) : 0;
+        }
+        if (score === null) continue;
+        const tags = question.tags.length > 0
+          ? question.tags
+          : [...new Set((question.prompt.toLowerCase().match(/[a-z][a-z0-9-]{3,}/g) ?? []).filter((word) => !stopWords.has(word)))].slice(0, 2);
+        for (const rawTag of tags) {
+          const tag = rawTag.trim().toLowerCase();
+          if (!tag) continue;
+          const current = topicScores.get(tag) ?? { correct: 0, total: 0, courseIds: new Set<string>() };
+          current.correct += score;
+          current.total++;
+          current.courseIds.add(attempt.quiz.lesson.module.courseId);
+          topicScores.set(tag, current);
+        }
+      }
+    }
+
+    const weak = [...topicScores.entries()]
+      .filter(([, value]) => value.total >= 1 && value.correct / value.total < 0.7)
+      .sort((a, b) => a[1].correct / a[1].total - b[1].correct / b[1].total)
+      .slice(0, 4);
+    if (!weak.length) return [];
+
+    const courseIds = [...new Set(weak.flatMap(([, value]) => [...value.courseIds]))];
+    const lessons = await this.prisma.lesson.findMany({
+      where: {
+        isPublished: true,
+        type: { in: [LessonType.article, LessonType.video] },
+        module: { isPublished: true, courseId: { in: courseIds }, course: { isPublished: true, track: { isPublished: true } } },
+      },
+      select: {
+        id: true,
+        title: true,
+        notes: true,
+        content: true,
+        module: { select: { courseId: true, course: { select: { slug: true, title: true } } } },
+      },
+    });
+    const textOf = (value: unknown): string => {
+      if (!value || typeof value !== 'object') return '';
+      const node = value as { text?: unknown; content?: unknown };
+      return `${typeof node.text === 'string' ? node.text : ''} ${Array.isArray(node.content) ? node.content.map(textOf).join(' ') : ''}`.trim();
+    };
+    return weak.map(([topic, value]) => {
+      const related = lessons
+        .filter((lesson) => value.courseIds.has(lesson.module.courseId))
+        .map((lesson) => {
+          const haystack = `${lesson.title} ${lesson.notes} ${textOf(lesson.content)}`.toLowerCase();
+          const relevance = haystack.includes(topic) ? 2 : topic.split(/\s+/).filter((word) => word.length > 3 && haystack.includes(word)).length;
+          return { lessonId: lesson.id, lessonTitle: lesson.title, courseSlug: lesson.module.course.slug, courseTitle: lesson.module.course.title, relevance };
+        })
+        .sort((a, b) => b.relevance - a.relevance)
+        .slice(0, 2)
+        .map(({ relevance: _relevance, ...lesson }) => lesson);
+      return { topic, missRate: Math.round((1 - value.correct / value.total) * 100), suggestedLessons: related };
+    });
   }
 
   private touchEnrollment(

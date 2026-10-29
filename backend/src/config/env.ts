@@ -14,6 +14,10 @@ export const envSchema = z.object({
   FRONTEND_URL: z.url(),
   API_URL: z.url(),
   DATABASE_URL: z.string().min(1),
+  AI_PROVIDER: z.enum(['gemini', 'groq']).default('gemini'),
+  AI_MODEL: optional,
+  GEMINI_API_KEY: optional,
+  GROQ_API_KEY: optional,
 
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),

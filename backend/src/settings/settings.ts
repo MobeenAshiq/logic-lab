@@ -37,6 +37,9 @@ export const SETTING_SCHEMAS = {
     live_class_attended: z.number().int().min(-1000).max(1000),
     plagiarism_confirmed: z.number().int().min(-1000).max(1000),
   }),
+  ai_daily_limit: z.strictObject({
+    studentMessages: z.number().int().min(0).max(500),
+  }),
 };
 
 export type SettingKey = keyof typeof SETTING_SCHEMAS;
@@ -65,4 +68,5 @@ export const SETTING_DEFAULTS: Settings = {
     live_class_attended: 5,
     plagiarism_confirmed: -50,
   },
+  ai_daily_limit: { studentMessages: 30 },
 };

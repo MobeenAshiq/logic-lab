@@ -67,6 +67,7 @@ model User {
   notificationPrefs NotificationPreference?
   mentoredLiveSessions LiveSession[]        @relation("LiveSessionMentor")
   attendance        Attendance[]
+  aiUsage           AiUsage[]
 
   @@map("users")
 }
@@ -465,6 +466,22 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("settings")
+}
+
+/// Per-student daily AI request counter. Requests are atomically capped server-side.
+model AiUsage {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  day       DateTime @db.Date
+  count     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([day])
+  @@map("ai_usage")
 }
 
 // ---------------------------------------------------------------------------

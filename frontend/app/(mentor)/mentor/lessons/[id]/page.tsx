@@ -8,6 +8,7 @@ import { LessonMediaEditor, teachLessonKey } from "@/components/learning/lesson-
 import { QuestionPanel } from "@/components/learning/question-panel";
 import { ErrorState, LoadingRows, PageHeader, PublishedBadge } from "@/components/shared";
 import { AssignmentBuilder } from "@/components/teaching/assignment-builder";
+import { AiQuestionDrafts } from "@/components/teaching/ai-question-drafts";
 import { QuizBuilder } from "@/components/teaching/quiz-builder";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ export default function MentorLessonPage() {
       />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
+          <AiQuestionDrafts lessonId={l.id} courseId={l.course.id} />
           {l.type === "quiz" && (
             <QuizBuilder lessonId={l.id} bankHref={(c) => `/mentor/courses/${c}/questions`} />
           )}

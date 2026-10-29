@@ -184,6 +184,15 @@ AI/ML & Data Science) and the default landing-page blocks. It never overwrites C
 
 **New env variables:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
 
+### Phase 9: AI learning helpers
+
+AI requests are made only by the backend. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=groq` and
+the corresponding `GEMINI_API_KEY` or `GROQ_API_KEY` in the backend environment; optional
+`AI_MODEL` overrides the provider's default lightweight model. Never add provider keys to the
+frontend environment. The student daily request cap defaults to 30 and can be changed by an
+admin under Settings. Submission AI/similarity signals are mentor review hints only and never
+apply an automatic penalty.
+
 **Phase 1 changes:** role and status changes now always require a `reason`.
 `/admin/users` can also filter by `status`. A mentor whose role changes loses their course
 assignments.

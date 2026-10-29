@@ -235,6 +235,36 @@ export default function StudentDashboard() {
         </Card>
       )}
 
+      {(learning.data?.recommendations.length ?? 0) > 0 && (
+        <section className="space-y-3" aria-labelledby="recommendations-title">
+          <div>
+            <h2 id="recommendations-title" className="font-heading text-lg font-bold">Topics to strengthen</h2>
+            <p className="text-muted-foreground text-sm">Based on your recent quiz results. Use these lessons for another review.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {learning.data?.recommendations.map((item) => (
+              <Card key={item.topic}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between gap-3 text-base">
+                    <span className="capitalize">{item.topic}</span>
+                    <Badge variant="outline">{item.missRate}% to revisit</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {item.suggestedLessons.map((lesson) => (
+                    <Link key={lesson.lessonId} href={`/student/lessons/${lesson.lessonId}`} className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm hover:bg-muted/50">
+                      <span className="min-w-0"><span className="block truncate font-medium">{lesson.lessonTitle}</span><span className="text-muted-foreground text-xs">{lesson.courseTitle}</span></span>
+                      <ArrowRight className="size-4 shrink-0 text-primary" />
+                    </Link>
+                  ))}
+                  {item.suggestedLessons.length === 0 && <p className="text-muted-foreground text-sm">Review this topic in your course materials.</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 3. Main Dashboard 2-Column Grid */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Left Column (8 cols): Active Learning & Courses */}

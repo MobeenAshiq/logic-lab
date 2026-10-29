@@ -107,6 +107,16 @@ export const en = {
     NOT_SESSION_MENTOR: 'You are not the mentor of this live class.',
     RECORDING_NOT_UPLOADED:
       'No recording has been uploaded for this session yet.',
+    AI_DAILY_LIMIT_REACHED:
+      'You have used all your AI messages for today. Your limit resets tomorrow.',
+    STUDENT_ONLY: 'This AI feature is available to students only.',
+    AI_REVIEW_NOT_AVAILABLE_FOR_GRADED_WORK:
+      'AI code review is available only for ungraded practice lessons.',
+    ACTIVE_ASSESSMENT_AI_DISABLED:
+      'AI help is paused while you are taking a graded quiz. Return to the tutor after submitting.',
+    AI_INVALID_RESPONSE: 'The AI could not create a usable response. Please try again.',
+    AI_TEMPORARILY_UNAVAILABLE:
+      'AI features are temporarily unavailable. Please try again shortly.',
   },
   email: {
     verifySubject: 'Your LogicLab verification code',

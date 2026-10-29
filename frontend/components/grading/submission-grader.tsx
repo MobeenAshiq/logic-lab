@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -82,6 +82,14 @@ function Grader({ sub, backHref }: { sub: SubmissionForGrader; backHref: string 
       queryClient.setQueryData(submissionKey(sub.id), updated);
       void queryClient.invalidateQueries({ queryKey: ["teach", "grading"] });
       toast.success(s.returned);
+    },
+    onError: toastError,
+  });
+  const suggest = useMutation({
+    mutationFn: () => api<{ suggestedFeedback: string }>(`/teach/submissions/${sub.id}/ai-feedback`, { method: "POST" }),
+    onSuccess: ({ suggestedFeedback }) => {
+      setFeedback(suggestedFeedback);
+      toast.message("AI feedback draft added. Review and edit it before returning the submission.");
     },
     onError: toastError,
   });
@@ -237,6 +245,9 @@ function Grader({ sub, backHref }: { sub: SubmissionForGrader; backHref: string 
                 onChange={(e) => setFeedback(e.target.value)}
               />
             </Field>
+            <Button type="button" size="sm" variant="outline" disabled={suggest.isPending || sub.status === "draft"} onClick={() => suggest.mutate()}>
+              <Sparkles className="mr-1 size-4" />{suggest.isPending ? "Drafting feedback…" : "Suggest feedback with AI"}
+            </Button>
 
             {returned && sub.returnedAt && (
               <p className="text-muted-foreground text-xs">

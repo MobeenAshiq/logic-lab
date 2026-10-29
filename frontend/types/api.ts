@@ -263,6 +263,11 @@ export interface LearningDashboard {
     percent: number;
     lastActivityAt: string;
   }[];
+  recommendations: {
+    topic: string;
+    missRate: number;
+    suggestedLessons: { lessonId: string; lessonTitle: string; courseSlug: string; courseTitle: string }[];
+  }[];
 }
 
 export interface QuestionAuthor {
@@ -506,6 +511,10 @@ export interface IntegrityFlags {
   contentMismatch: boolean;
   typedChars: number;
   eventCount: number;
+  aiReview?: {
+    similarity: { submissionId: string; score: number } | null;
+    authorship: { concern: boolean; confidence: number; rationale: string } | null;
+  };
 }
 
 export interface BankQuestion {
