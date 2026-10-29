@@ -15,9 +15,11 @@ function workerFor(language: ChallengeLanguage) {
     self.onmessage = ({ data }) => {
       const { id, code, tests } = data;
       try {
+        self.postMessage({ id, phase: 'ready' });
+        const canonical = (value) => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map((key) => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}' : JSON.stringify(value);
         const fn = new Function('args', '"use strict"; const solution = (' + code + '); return solution(...args);');
         const results = tests.map((test) => {
-          try { const result = fn(test.input); return { pass: JSON.stringify(result) === JSON.stringify(test.expected), output: JSON.stringify(result) }; }
+          try { const result = fn(test.input); return { pass: canonical(result) === canonical(test.expected), output: JSON.stringify(result) }; }
           catch (error) { return { pass: false, output: String(error) }; }
         });
         self.postMessage({ id, results });
@@ -34,13 +36,15 @@ function workerFor(language: ChallengeLanguage) {
       try {
         const pyodide = await getPyodide();
         if (packages) await pyodide.loadPackage(['numpy', 'pandas']);
+        self.postMessage({ id, phase: 'ready' });
+        const canonical = (value) => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map((key) => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}' : JSON.stringify(value);
         const results = [];
         for (const test of tests) {
           pyodide.globals.set('__challenge_code', code);
           pyodide.globals.set('__challenge_input', JSON.stringify(test.input));
           const output = await pyodide.runPythonAsync("import json\\nnamespace = {}\\nexec(__challenge_code, namespace)\\njson.dumps(namespace['solution'](*json.loads(__challenge_input)))");
           const actual = JSON.parse(output.toString());
-          results.push({ pass: JSON.stringify(actual) === JSON.stringify(test.expected), output: JSON.stringify(actual) });
+          results.push({ pass: canonical(actual) === canonical(test.expected), output: JSON.stringify(actual) });
         }
         self.postMessage({ id, results });
       } catch (error) { self.postMessage({ id, error: String(error) }); }
@@ -53,6 +57,16 @@ function workerFor(language: ChallengeLanguage) {
   worker.onmessage = (event: MessageEvent<WorkerReply>) => {
     const request = pending.get(event.data.id);
     if (!request) return;
+    if ((event.data as WorkerReply & { phase?: string }).phase === "ready") {
+      window.clearTimeout(request.timer);
+      request.timer = window.setTimeout(() => {
+        pending.delete(event.data.id);
+        worker.terminate();
+        workers.delete(language);
+        request.reject(new Error("Execution stopped after 5 seconds. Check for an infinite loop and try again."));
+      }, 5_000);
+      return;
+    }
     window.clearTimeout(request.timer);
     pending.delete(event.data.id);
     if (event.data.error) { request.reject(new Error(event.data.error)); return; }
@@ -83,7 +97,7 @@ export function runChallengeCode(language: ChallengeLanguage, code: string, test
       worker.terminate();
       workers.delete(language);
       reject(new Error("Execution stopped after 5 seconds. Check for an infinite loop and try again."));
-    }, timeoutMs);
+    }, language === "python" ? 90_000 : timeoutMs);
     pending.set(id, { resolve, reject, timer });
     worker.postMessage({ id, code, tests, packages: options.loadDataPackages ?? false });
   });

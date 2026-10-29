@@ -32,13 +32,21 @@ export function DailyChallenge({ tracks }: { tracks: PublicTrack[] }) {
   const [runResult, setRunResult] = useState<{ passed: number; total: number; results: boolean[]; outputs: string[] } | null>(null);
   const [runError, setRunError] = useState("");
   const active = challenge.data?.challenge;
+  const starterFor = (target: ChallengeLanguage) => {
+    const savedStarter = active?.starterCode ?? "";
+    if (target === "javascript" && /\bfunction\b|=>/.test(savedStarter)) return savedStarter;
+    if (target === "python" && /\bdef\s+\w+\s*\(/.test(savedStarter)) return savedStarter;
+    return target === "javascript"
+      ? "function solution(value) {\n  // Write your solution here\n  return value;\n}"
+      : "def solution(value):\n    # Write your solution here\n    return value\n";
+  };
   const visibleTests = useMemo(() => active?.tests ?? [], [active?.tests]);
   const resultsCacheKey = `challenge-code:${active?.id ?? "none"}:${language}`;
   useEffect(() => {
     if (!active) return;
     const saved = sessionStorage.getItem(resultsCacheKey);
     const savedSubmission = challenge.data?.submission?.language === language ? challenge.data.submission.code : undefined;
-    setCode(saved ?? savedSubmission ?? (active.starterCode || (language === "javascript" ? "function solution(value) {\n  // Write your solution here\n  return value;\n}" : "def solution(value):\n    # Write your solution here\n    return value\n")));
+    setCode(saved ?? savedSubmission ?? starterFor(language));
   }, [active, challenge.data?.submission?.code, language, resultsCacheKey]);
   const submission = useMutation({
     mutationFn: (source: string) => api<SubmitResult>(`/student/challenges/${active?.id}/submissions`, { method: "POST", body: { code: source, language } }),

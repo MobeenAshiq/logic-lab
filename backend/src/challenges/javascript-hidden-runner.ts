@@ -6,6 +6,7 @@ const { parentPort, workerData } = require('node:worker_threads');
   try {
     const { getQuickJS } = require('quickjs-emscripten');
     const quickjs = await getQuickJS();
+    parentPort.postMessage({ ok: true, phase: 'ready' });
     const results = [];
     for (const test of workerData.tests) {
       const runtime = quickjs.newRuntime();
@@ -40,23 +41,38 @@ export function runJavaScriptHiddenTests(
       workerData: { code, tests },
       resourceLimits: { maxOldGenerationSizeMb: 128, maxYoungGenerationSizeMb: 32 },
     });
-    const timeout = setTimeout(() => {
+    let settled = false;
+    let timeout = setTimeout(() => {
+      settled = true;
       void worker.terminate();
       reject(new Error('JavaScript hidden tests timed out.'));
-    }, timeoutMs);
-    worker.once('message', (message: { ok: boolean; results?: boolean[]; error?: string }) => {
+    }, 90_000);
+    worker.on('message', (message: { ok: boolean; phase?: string; results?: boolean[]; error?: string }) => {
+      if (settled) return;
+      if (message.phase === 'ready') {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          settled = true;
+          void worker.terminate();
+          reject(new Error('JavaScript hidden tests timed out.'));
+        }, timeoutMs);
+        return;
+      }
+      settled = true;
       clearTimeout(timeout);
       void worker.terminate();
       if (message.ok) resolve(message.results ?? []);
       else reject(new Error(message.error ?? 'JavaScript hidden tests failed.'));
     });
     worker.once('error', (error) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeout);
       reject(error);
     });
     worker.once('exit', (code) => {
       clearTimeout(timeout);
-      if (code !== 0) reject(new Error(`JavaScript runner exited with code ${code}.`));
+      if (!settled && code !== 0) reject(new Error(`JavaScript runner exited with code ${code}.`));
     });
   });
 }

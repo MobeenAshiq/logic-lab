@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -33,19 +33,21 @@ export function CodeEditor({
     readOnly: false,
   }), []);
 
-  useEffect(() => {
+  const onMount = (editor: { getDomNode: () => HTMLElement | null; onDidDispose: (callback: () => void) => void }) => {
     if (!pasteBlocked) return;
+    const node = editor.getDomNode();
+    if (!node) return;
     const block = (event: ClipboardEvent) => {
       event.preventDefault();
       setPasteNotice(true);
       window.setTimeout(() => setPasteNotice(false), 3500);
     };
-    document.addEventListener("paste", block, true);
-    return () => document.removeEventListener("paste", block, true);
-  }, [pasteBlocked]);
+    node.addEventListener("paste", block, true);
+    editor.onDidDispose(() => node.removeEventListener("paste", block, true));
+  };
 
   return <div className="overflow-hidden rounded-lg border">
     {pasteNotice && <p className="bg-warning/10 text-warning px-3 py-2 text-xs font-medium">Pasting is disabled for this graded challenge.</p>}
-    <Monaco height={height} language={language === "javascript" ? "javascript" : "python"} theme="vs-dark" value={value} onChange={(next) => onChange(next ?? "")} options={options} />
+    <Monaco height={height} language={language === "javascript" ? "javascript" : "python"} theme="vs-dark" value={value} onChange={(next) => onChange(next ?? "")} options={options} onMount={onMount} />
   </div>;
 }

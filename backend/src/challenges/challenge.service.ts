@@ -25,7 +25,14 @@ function testCasesOf(value: Prisma.JsonValue): TestCase[] {
 }
 
 function jsonEqual(actual: unknown, expected: unknown) {
-  return JSON.stringify(actual) === JSON.stringify(expected);
+  const normalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(normalize);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, normalize(item)]));
+    }
+    return value;
+  };
+  return JSON.stringify(normalize(actual)) === JSON.stringify(normalize(expected));
 }
 
 @Injectable()
@@ -117,7 +124,7 @@ export class ChallengeService {
     const allTests = [...visibleTests, ...hiddenTests];
     if (input.language === 'python') {
       try {
-        passedTests = (await runPythonHiddenTests(input.code, allTests, 20_000)).filter(Boolean).length;
+        passedTests = (await runPythonHiddenTests(input.code, allTests)).filter(Boolean).length;
       } catch {
         passedTests = 0;
       }
@@ -131,14 +138,20 @@ export class ChallengeService {
     const passed = passedTests === total;
     const existing = await this.prisma.challengeSubmission.findUnique({ where: { challengeId_userId: { challengeId, userId: auth.id } } });
     const firstSolve = passed && !existing?.solvedAt;
+    const effectivePassed = Boolean(existing?.solvedAt) || passed;
+    const effectivePassedTests = existing?.solvedAt
+      ? Math.max(existing.passedTests, passedTests)
+      : passedTests;
     await this.prisma.challengeSubmission.upsert({
       where: { challengeId_userId: { challengeId, userId: auth.id } },
       create: {
         challengeId, userId: auth.id, language: input.language, code: input.code,
-        passed, passedTests, totalTests: total, attempts: 1, solvedAt: passed ? new Date() : null,
+        passed: effectivePassed, passedTests: effectivePassedTests, totalTests: total, attempts: 1, solvedAt: passed ? new Date() : null,
       },
       update: {
-        language: input.language, code: input.code, passed: Boolean(existing?.solvedAt) || passed, passedTests, totalTests: total,
+        language: input.language, code: input.code, passed: effectivePassed,
+        passedTests: effectivePassedTests,
+        totalTests: existing?.solvedAt ? existing.totalTests : total,
         attempts: { increment: 1 }, ...(firstSolve ? { solvedAt: new Date() } : {}),
       },
     });

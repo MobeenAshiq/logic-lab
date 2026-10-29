@@ -17,6 +17,7 @@ function getWorker() {
       try {
         const pyodide = await getPyodide();
         await pyodide.loadPackage(['numpy', 'pandas']);
+        self.postMessage({ id, phase: 'ready' });
         pyodide.globals.set('__notebook_code', code);
         const output = await pyodide.runPythonAsync("import contextlib, io, json\\nif '__notebook_scope' not in globals(): __notebook_scope = {}\\n__notebook_scope.pop('result', None)\\n__stdout = io.StringIO()\\nwith contextlib.redirect_stdout(__stdout):\\n    exec(__notebook_code, __notebook_scope)\\n__result = __notebook_scope.get('result', None)\\ndef __json_default(value):\\n    if hasattr(value, 'to_dict'): return value.to_dict(orient='records')\\n    if hasattr(value, 'tolist'): return value.tolist()\\n    return str(value)\\njson.dumps({'stdout': __stdout.getvalue(), 'result': __result}, default=__json_default)");
         self.postMessage({ id, output: output.toString() });
@@ -29,6 +30,16 @@ function getWorker() {
   worker.onmessage = (event: MessageEvent<{ id: string; output?: string; error?: string }>) => {
     const request = pending.get(event.data.id);
     if (!request) return;
+    if ((event.data as { phase?: string }).phase === "ready") {
+      window.clearTimeout(request.timer);
+      request.timer = window.setTimeout(() => {
+        pending.delete(event.data.id);
+        worker?.terminate();
+        worker = null;
+        request.reject(new Error("Execution stopped after 5 seconds. Check for an infinite loop and try again."));
+      }, 5_000);
+      return;
+    }
     window.clearTimeout(request.timer);
     pending.delete(event.data.id);
     if (event.data.error) { request.reject(new Error(event.data.error)); return; }
@@ -47,7 +58,7 @@ function getWorker() {
   return worker;
 }
 
-export function runNotebookCode(code: string, timeoutMs = 5_000): Promise<NotebookOutput> {
+export function runNotebookCode(code: string): Promise<NotebookOutput> {
   return new Promise((resolve, reject) => {
     const id = String(++sequence);
     const timer = window.setTimeout(() => {
@@ -55,7 +66,7 @@ export function runNotebookCode(code: string, timeoutMs = 5_000): Promise<Notebo
       worker?.terminate();
       worker = null;
       reject(new Error("Execution stopped after 5 seconds. Check for an infinite loop and try again."));
-    }, timeoutMs);
+    }, 90_000);
     pending.set(id, { resolve, reject, timer });
     getWorker().postMessage({ id, code });
   });

@@ -9,8 +9,9 @@ const { parentPort, workerData } = require('node:worker_threads');
 (async () => {
   try {
     const { loadPyodide } = await import(workerData.pyodideModuleUrl);
-    const pyodide = await loadPyodide();
+    const pyodide = await loadPyodide({ indexURL: new URL('.', workerData.pyodideModuleUrl).href });
     await pyodide.loadPackage(['numpy', 'pandas']);
+    parentPort.postMessage({ ok: true, phase: 'ready' });
     pyodide.globals.set('__student_code', workerData.code);
     pyodide.globals.set('__tests_json', JSON.stringify(workerData.tests));
     const result = await pyodide.runPythonAsync("import json\\n__tests = json.loads(__tests_json)\\n__namespace = {}\\nexec(__student_code, __namespace)\\n__results = []\\nfor __test in __tests:\\n    try:\\n        __actual = __namespace['solution'](*__test['input'])\\n        __results.append(json.dumps(__actual, sort_keys=True) == json.dumps(__test['expected'], sort_keys=True))\\n    except BaseException:\\n        __results.append(False)\\njson.dumps(__results)");
@@ -32,23 +33,38 @@ export function runPythonHiddenTests(
       workerData: { code, tests, pyodideModuleUrl: PYODIDE_MODULE_URL },
       resourceLimits: { maxOldGenerationSizeMb: 256, maxYoungGenerationSizeMb: 64 },
     });
-    const timeout = setTimeout(() => {
+    let settled = false;
+    let timeout = setTimeout(() => {
+      settled = true;
       void worker.terminate();
       reject(new Error('Python hidden test timed out.'));
-    }, timeoutMs);
-    worker.once('message', (message: { ok: boolean; results?: boolean[]; error?: string }) => {
+    }, 90_000);
+    worker.on('message', (message: { ok: boolean; phase?: string; results?: boolean[]; error?: string }) => {
+      if (settled) return;
+      if (message.phase === 'ready') {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          settled = true;
+          void worker.terminate();
+          reject(new Error('Python hidden tests timed out.'));
+        }, timeoutMs);
+        return;
+      }
+      settled = true;
       clearTimeout(timeout);
       void worker.terminate();
       if (message.ok) resolve(message.results ?? []);
       else reject(new Error(message.error ?? 'Python hidden test failed.'));
     });
     worker.once('error', (error) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeout);
       reject(error);
     });
     worker.once('exit', (code) => {
       clearTimeout(timeout);
-      if (code !== 0) reject(new Error(`Python runner exited with code ${code}.`));
+      if (!settled && code !== 0) reject(new Error(`Python runner exited with code ${code}.`));
     });
   });
 }
