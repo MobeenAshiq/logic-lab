@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(__filename);
-const PYODIDE_MODULE_URL = pathToFileURL(require.resolve('pyodide')).href;
+const PYODIDE_MODULE_URL = pathToFileURL(require.resolve('pyodide/pyodide.mjs')).href;
 const RUNNER = `
 const { parentPort, workerData } = require('node:worker_threads');
 (async () => {
@@ -30,6 +30,7 @@ export function runPythonHiddenTests(
     const worker = new Worker(RUNNER, {
       eval: true,
       workerData: { code, tests, pyodideModuleUrl: PYODIDE_MODULE_URL },
+      resourceLimits: { maxOldGenerationSizeMb: 256, maxYoungGenerationSizeMb: 64 },
     });
     const timeout = setTimeout(() => {
       void worker.terminate();

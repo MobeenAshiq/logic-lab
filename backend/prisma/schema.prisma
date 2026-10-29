@@ -176,6 +176,7 @@ model Track {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   courses Course[]
+  challenges Challenge[]
   posts   Post[]
 
   @@map("tracks")
@@ -201,7 +202,6 @@ model Course {
   mentors       CourseMentor[]
   enrollments   Enrollment[]
   questionBank  Question[]
-  challenges    Challenge[]
   conversations Conversation[]
   liveSessions  LiveSession[]
 

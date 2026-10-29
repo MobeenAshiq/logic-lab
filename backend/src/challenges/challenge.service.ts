@@ -21,29 +21,40 @@ function jsonEqual(actual: unknown, expected: unknown) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
-async function runJavaScript(code: string, test: TestCase): Promise<boolean> {
+async function runJavaScriptTests(code: string, tests: TestCase[]): Promise<boolean[]> {
   const quickjs = await getQuickJS();
-  const vm = quickjs.newContext();
+  const runtime = quickjs.newRuntime();
+  runtime.setMemoryLimit(32 * 1024 * 1024);
+  runtime.setTimeLimit(100);
+  const context = runtime.newContext();
+  const results: boolean[] = [];
   try {
-    const result = vm.evalCode(
-      `(() => { const solution = (${code}); const result = solution(...${JSON.stringify(test.input)}); return JSON.stringify(result); })()`,
-      { executionTimeout: 250 },
-    );
-    if (result.error) {
-      vm.dump(result.error);
-      result.error.dispose();
-      return false;
+    for (const test of tests) {
+      const result = context.evalCode(
+        `(() => { const solution = (${code}); const result = solution(...${JSON.stringify(test.input)}); return JSON.stringify(result); })()`,
+      );
+      if (result.error) {
+        result.error.dispose();
+        results.push(false);
+        continue;
+      }
+      const output = context.dump(result.value);
+      result.value.dispose();
+      if (typeof output !== 'string') {
+        results.push(false);
+        continue;
+      }
+      try {
+        results.push(jsonEqual(JSON.parse(output) as unknown, test.expected));
+      } catch {
+        results.push(false);
+      }
     }
-    const output = vm.dump(result.value);
-    result.value.dispose();
-    if (typeof output !== 'string') return false;
-    const parsed: unknown = JSON.parse(output);
-    return jsonEqual(parsed, test.expected);
-  } catch {
-    return false;
   } finally {
-    vm.dispose();
+    context.dispose();
+    runtime.dispose();
   }
+  return results;
 }
 
 @Injectable()
@@ -135,19 +146,15 @@ export class ChallengeService {
     const allTests = [...visibleTests, ...hiddenTests];
     if (input.language === 'python') {
       try {
-        passedTests = (await runPythonHiddenTests(input.code, allTests)).filter(Boolean).length;
+        passedTests = (await runPythonHiddenTests(input.code, allTests, 20_000)).filter(Boolean).length;
       } catch {
         passedTests = 0;
       }
     } else {
-      const start = Date.now();
-      for (const test of allTests) {
-        if (Date.now() - start > 5_000) break;
-        try {
-          if (await runJavaScript(input.code, test)) passedTests++;
-        } catch {
-          // A runtime error or timeout is a failed case, never a successful submission.
-        }
+      try {
+        passedTests = (await runJavaScriptTests(input.code, allTests)).filter(Boolean).length;
+      } catch {
+        passedTests = 0;
       }
     }
     const passed = passedTests === total;
