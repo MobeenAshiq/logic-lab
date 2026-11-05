@@ -49,6 +49,12 @@ export class LearnAiController {
 export class TeachAiController {
   constructor(private readonly ai: AiService) {}
 
+  /** Mentors: today's AI requests left. Admins get { unlimited: true }. */
+  @Get('ai/usage')
+  usage(@CurrentUser() user: AuthUser) {
+    return this.ai.usage(user);
+  }
+
   @Post('lessons/:id/ai/questions')
   generateQuestions(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) lessonId: string) {
     return this.ai.generateQuestions(user, lessonId);

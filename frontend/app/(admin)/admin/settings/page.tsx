@@ -320,11 +320,11 @@ export default function AdminSettingsPage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>AI daily usage limit</CardTitle>
-          <CardDescription>Maximum tutor and practice-code-review requests per student each UTC day. Set to 0 to disable student AI requests.</CardDescription>
+          <CardDescription>How many AI requests each student and each mentor can make per day (tutor, code review, question drafts, feedback drafts). Resets daily at 5 AM Pakistan time. Admins are unlimited. Set to 0 to turn AI off for students and mentors.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); aiLimitMutation.mutate(); }}>
-            <Field label="Messages per student per day" htmlFor="ai-daily-limit" hint="Allowed range: 0–500">
+            <Field label="AI requests per user per day" htmlFor="ai-daily-limit" hint="Allowed range: 0–500">
               <Input id="ai-daily-limit" type="number" min={0} max={500} step={1} value={aiLimit} onChange={(event) => setAiLimit(Number(event.target.value))} disabled={aiLimitQuery.isLoading || aiLimitQuery.isError} />
             </Field>
             <Button type="submit" disabled={aiLimitMutation.isPending || !Number.isInteger(aiLimit) || aiLimit < 0 || aiLimit > 500}>

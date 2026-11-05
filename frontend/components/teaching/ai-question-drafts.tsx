@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, WandSparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { toastError } from "@/lib/errors";
+import { MentorAiUsage, teachUsageKey } from "@/components/ai/mentor-ai-usage";
 
 type DraftQuestion = {
   type: "short" | "mcq";
@@ -25,10 +26,12 @@ type DraftQuestion = {
 
 export function AiQuestionDrafts({ lessonId, courseId }: { lessonId: string; courseId: string }) {
   const [drafts, setDrafts] = useState<DraftQuestion[]>([]);
+  const queryClient = useQueryClient();
   const generate = useMutation({
     mutationFn: () => api<{ questions: DraftQuestion[] }>(`/teach/lessons/${lessonId}/ai/questions`, { method: "POST" }),
     onSuccess: ({ questions }) => { setDrafts(questions); toast.success("Draft questions generated. Review each before adding it to the bank."); },
     onError: toastError,
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: teachUsageKey }),
   });
 
   const save = async (index: number) => {
@@ -58,6 +61,7 @@ export function AiQuestionDrafts({ lessonId, courseId }: { lessonId: string; cou
       </CardHeader>
       <CardContent className="space-y-4">
         <Button type="button" variant="outline" disabled={generate.isPending} onClick={() => generate.mutate()}><Sparkles className="mr-2 size-4" />{generate.isPending ? "Generating…" : "Generate questions"}</Button>
+        <MentorAiUsage />
         {drafts.map((draft, index) => <div key={`${index}-${draft.prompt.slice(0, 20)}`} className="space-y-3 rounded-lg border p-4">
           <label className="block space-y-1 text-sm font-medium">{draft.type === "mcq" ? "Multiple-choice question" : "Short-answer question"}
             <Textarea value={draft.prompt} rows={3} onChange={(event) => edit(index, { prompt: event.target.value })} aria-label={`Draft question ${index + 1}`} />
