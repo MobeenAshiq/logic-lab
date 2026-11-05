@@ -34,7 +34,7 @@ export interface NavItem {
 export const NAV: Record<Portal, NavItem[]> = {
   student: [
     { href: "/student", label: t.common.nav.dashboard, icon: LayoutDashboard, exact: true },
-    { href: "/courses", label: t.common.nav.courses, icon: BookOpen },
+    { href: "/student/courses", label: t.common.nav.courses, icon: BookOpen },
     { href: "/student/live", label: t.live.nav, icon: Video },
     { href: "/student/challenges", label: "Daily challenges", icon: Code2 },
     { href: "/student/notebook", label: "Python notebook", icon: BookOpen },

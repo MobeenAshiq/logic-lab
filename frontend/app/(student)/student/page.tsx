@@ -507,7 +507,7 @@ export default function StudentDashboard() {
                   Browse the course catalog to start your learning journey.
                 </p>
                 <Button asChild size="sm" variant="outline" className="mt-4">
-                  <Link href="/courses">Browse Catalog</Link>
+                  <Link href="/student/courses">Browse Catalog</Link>
                 </Button>
               </div>
             )}

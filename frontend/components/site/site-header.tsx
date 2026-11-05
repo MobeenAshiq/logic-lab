@@ -14,7 +14,6 @@ import { t } from "@/lib/i18n";
 import { NotificationsBell } from "@/components/notifications/notifications-bell";
 import { ProgramsMegaMenu } from "@/components/site/programs-mega-menu";
 import { SearchDialog } from "@/components/site/search-dialog";
-import { LivePlatformTicker } from "@/components/site/live-platform-ticker";
 
 function AuthButtons({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me, isLoading } = useMe();
@@ -60,6 +59,16 @@ function AuthButtons({ onNavigate }: { onNavigate?: () => void }) {
       <Button size="sm" className="rounded-lg shadow-xs" asChild onClick={onNavigate}>
         <Link href="/signup">{t.common.nav.startTrial}</Link>
       </Button>
+    </div>
+  );
+}
+
+function HeaderBell() {
+  const { data: me } = useMe();
+  if (!me) return null;
+  return (
+    <div className="relative">
+      <NotificationsBell />
     </div>
   );
 }
@@ -127,10 +136,8 @@ export function SiteHeader() {
             <Search className="size-4.5 group-hover:scale-105 transition-transform" />
           </button>
 
-          {/* Notifications Bell */}
-          <div className="relative">
-            <NotificationsBell />
-          </div>
+          {/* Notifications Bell (logged-in users only) */}
+          <HeaderBell />
 
           <div className="mx-1 h-5 w-px bg-border/70 hidden sm:block" />
 
@@ -241,10 +248,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* 2. Real Platform Stats Ticker */}
-      <LivePlatformTicker />
-
-      {/* 3. Search Dialog Modal */}
+      {/* Search Dialog Modal */}
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );

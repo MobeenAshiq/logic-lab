@@ -66,6 +66,8 @@ async function parseError(res: Response): Promise<ApiError> {
 
 function goToLogin(reason?: string) {
   if (typeof window === "undefined") return;
+  // Already on the login page: redirecting again would reload it forever.
+  if (window.location.pathname === "/login") return;
   const next = window.location.pathname + window.location.search;
   const params = new URLSearchParams({ next });
   if (reason) params.set("reason", reason);
