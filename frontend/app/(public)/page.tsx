@@ -20,7 +20,6 @@ import {
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { AppDownloadBar } from "@/components/site/app-download-bar";
 import { PlanCard } from "@/components/site/plan-card";
 import { TrackCard } from "@/components/site/track-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -262,14 +261,6 @@ export default async function LandingPage() {
               fill="#34D399"
             />
           </svg>
-        </div>
-
-        {/* Floating App Store & Google Play download badges as in screenshot */}
-        <div className="mx-auto mt-12 max-w-6xl px-4 pt-8 border-t border-border/40 flex flex-col items-center justify-center text-center">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Practice anywhere · Instant mentor sync · Available on iOS &amp; Android
-          </p>
-          <AppDownloadBar />
         </div>
       </section>
 

@@ -8,437 +8,173 @@ import {
   ChevronRight,
   Code2,
   Cpu,
-  Database,
-  Flame,
-  Layers,
+  GraduationCap,
   Sparkles,
-  Terminal,
+  Trophy,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface TrackCategory {
+interface TrackDetail {
   id: string;
   name: string;
+  description: string;
   icon: typeof Brain;
-  isNew?: boolean;
-  curriculum: {
+  accentColor: string;
+  viewAllHref: string;
+  modules: Array<{
     title: string;
-    viewAllHref: string;
-    primaryItems: Array<{
-      title: string;
-      href: string;
-      badge?: string;
-    }>;
-    discoverItems: Array<{
-      id: string;
-      title: string;
-      subtitle?: string;
-      href: string;
-      isNew?: boolean;
-      hasSubmenu?: boolean;
-    }>;
-  };
-  submenus: Record<
-    string,
-    {
-      title: string;
-      items: Array<{ title: string; href: string; badge?: string }>;
-    }
-  >;
+    description: string;
+    href: string;
+  }>;
+  features: Array<{
+    title: string;
+    description: string;
+    href: string;
+  }>;
 }
 
-const TRACKS_DATA: TrackCategory[] = [
+const REAL_TRACKS: TrackDetail[] = [
   {
     id: "logic-building",
     name: "Logic Building",
+    description: "Foundations of computational thinking and algorithmic problem solving",
     icon: Brain,
-    curriculum: {
-      title: "LOGIC BUILDING",
-      viewAllHref: "/courses?track=logic-building",
-      primaryItems: [
-        { title: "Today's Summary", href: "/courses" },
-        {
-          title: "Foundations of Problem Solving",
-          href: "/courses",
-          badge: "⭐ 4.9 · 1.4k Learners",
-        },
-        { title: "Pattern Recognition & Loops", href: "/courses" },
-        { title: "Functions & Recursion", href: "/courses" },
-      ],
-      discoverItems: [
-        {
-          id: "interview-prep",
-          title: "Interview Prep Pack",
-          subtitle: "Handpicked problems for top tech interviews",
-          href: "/courses",
-        },
-        {
-          id: "etfs",
-          title: "Foundational Algorithms (DSA)",
-          href: "/courses",
-        },
-        {
-          id: "valuations",
-          title: "Valuations & Skill Tests",
-          href: "/courses",
-          hasSubmenu: true,
-        },
-        {
-          id: "screener",
-          title: "Problem Screener",
-          subtitle: "Filter challenges by difficulty & pattern",
-          href: "/courses",
-          isNew: true,
-        },
-        {
-          id: "scores",
-          title: "LogicLab Scores",
-          subtitle: "Rating of your algorithmic mastery",
-          href: "/leaderboard",
-          isNew: true,
-        },
-      ],
-    },
-    submenus: {
-      valuations: {
-        title: "VALUATIONS",
-        items: [
-          { title: "Top P/E Coding Drills", href: "/courses" },
-          { title: "Time & Space Complexity Tests", href: "/courses" },
-          { title: "Top Scoring Algorithmic Tasks", href: "/courses" },
-          { title: "Large Scale Logic Tests", href: "/courses" },
-          { title: "99th Percentile Challenges", href: "/courses" },
-          { title: "Beginner Diagnostic Assessment", href: "/courses" },
-        ],
+    accentColor: "text-[#7C3AED]",
+    viewAllHref: "/courses?track=logic-building",
+    modules: [
+      {
+        title: "Problem Solving & Flowcharts",
+        description: "Breaking down complex problems into structured logic steps",
+        href: "/courses?track=logic-building",
       },
-      screener: {
-        title: "FILTER CRITERIA",
-        items: [
-          { title: "Array & Hash Tables", href: "/courses" },
-          { title: "Two Pointers & Sliding Window", href: "/courses" },
-          { title: "Binary Search Variations", href: "/courses" },
-          { title: "Linked Lists & Pointers", href: "/courses" },
-          { title: "Stack & Queue Simulation", href: "/courses" },
-          { title: "Tree & Graph Traversals", href: "/courses" },
-        ],
+      {
+        title: "Loops & Pattern Recognition",
+        description: "Nested loops, iteration techniques, and array traversal",
+        href: "/courses?track=logic-building",
       },
-      scores: {
-        title: "SCORE METRICS",
-        items: [
-          { title: "Algorithmic Precision Score", href: "/leaderboard" },
-          { title: "Time Efficiency Benchmark", href: "/leaderboard" },
-          { title: "Code Cleanliness Rating", href: "/leaderboard" },
-          { title: "Consistency Streak Rating", href: "/leaderboard" },
-          { title: "Speed Performance Index", href: "/leaderboard" },
-          { title: "Mentor Endorsement Badges", href: "/leaderboard" },
-        ],
+      {
+        title: "Functions, Modularity & Recursion",
+        description: "Clean code structure, call stack mastery, and base cases",
+        href: "/courses?track=logic-building",
       },
-      "interview-prep": {
-        title: "COMPANY TRACKS",
-        items: [
-          { title: "FAANG & Big Tech Curated Set", href: "/courses" },
-          { title: "Fintech & Banking Systems", href: "/courses" },
-          { title: "High-Growth Startups Pack", href: "/courses" },
-          { title: "Behavioral & System Logic", href: "/courses" },
-          { title: "Mock Interview Simulations", href: "/courses" },
-          { title: "Live Mentor Code Review", href: "/courses" },
-        ],
+      {
+        title: "Data Structures Foundations",
+        description: "Arrays, hash maps, two pointers, and basic sorting",
+        href: "/courses?track=logic-building",
       },
-    },
+    ],
+    features: [
+      {
+        title: "Mentor Assignment Reviews",
+        description: "Direct feedback from senior engineers on every submission",
+        href: "/courses",
+      },
+      {
+        title: "Typing Replay Verification",
+        description: "Ensuring authentic learning without copy-pasting",
+        href: "/courses",
+      },
+      {
+        title: "Weekly Office Hours",
+        description: "Live Q&A sessions to unblock difficult concepts",
+        href: "/community",
+      },
+    ],
   },
   {
-    id: "web-dev",
-    name: "Fullstack Web Dev",
+    id: "web-development",
+    name: "Web Development",
+    description: "From beginner to production-grade modern full-stack web applications",
     icon: Code2,
-    curriculum: {
-      title: "WEB DEVELOPMENT",
-      viewAllHref: "/courses?track=web-development",
-      primaryItems: [
-        { title: "Fullstack Roadmap 2026", href: "/courses" },
-        {
-          title: "Modern React 19 & Next.js 15",
-          href: "/courses",
-          badge: "🔥 Hot",
-        },
-        { title: "Backend APIs & Database Design", href: "/courses" },
-        { title: "Authentication & Cloud Deployment", href: "/courses" },
-      ],
-      discoverItems: [
-        {
-          id: "fullstack-projects",
-          title: "Production Projects",
-          subtitle: "Build real SaaS, e-commerce, & real-time apps",
-          href: "/courses",
-        },
-        {
-          id: "architecture",
-          title: "System Architecture & Scaling",
-          href: "/courses",
-        },
-        {
-          id: "valuations",
-          title: "Valuations & Skill Tests",
-          href: "/courses",
-          hasSubmenu: true,
-        },
-        {
-          id: "screener",
-          title: "Fullstack Code Screener",
-          subtitle: "Evaluate architecture & security standards",
-          href: "/courses",
-          isNew: true,
-        },
-        {
-          id: "scores",
-          title: "Developer Readiness Score",
-          subtitle: "Industry benchmark for hiring readiness",
-          href: "/leaderboard",
-          isNew: true,
-        },
-      ],
-    },
-    submenus: {
-      valuations: {
-        title: "WEB SKILL ASSESSMENTS",
-        items: [
-          { title: "Next.js SSR & Server Actions Test", href: "/courses" },
-          { title: "PostgreSQL & Prisma Schema Design", href: "/courses" },
-          { title: "REST & WebSocket Realtime APIs", href: "/courses" },
-          { title: "State Management & React Query", href: "/courses" },
-          { title: "Docker & AWS Cloud Setup", href: "/courses" },
-          { title: "Security & OWASP Best Practices", href: "/courses" },
-        ],
+    accentColor: "text-[#2563EB]",
+    viewAllHref: "/courses?track=web-development",
+    modules: [
+      {
+        title: "HTML5, Modern CSS & Tailwind",
+        description: "Responsive layouts, semantic structure, and modern design systems",
+        href: "/courses?track=web-development",
       },
-      "fullstack-projects": {
-        title: "PORTFOLIO PROJECTS",
-        items: [
-          { title: "E-Commerce with Stripe Payments", href: "/courses" },
-          { title: "Real-Time Collaboration Platform", href: "/courses" },
-          { title: "AI-Powered SaaS Application", href: "/courses" },
-          { title: "Job Board & Applicant Tracking", href: "/courses" },
-          { title: "Social Feed & Notifications Engine", href: "/courses" },
-          { title: "Analytics Dashboard with Charts", href: "/courses" },
-        ],
+      {
+        title: "JavaScript ES6+ & TypeScript",
+        description: "Async programming, closures, DOM manipulation, and types",
+        href: "/courses?track=web-development",
       },
-      scores: {
-        title: "SKILL BENCHMARKS",
-        items: [
-          { title: "Frontend Architecture Rating", href: "/leaderboard" },
-          { title: "Backend Scalability Metric", href: "/leaderboard" },
-          { title: "Code Quality & Linting Score", href: "/leaderboard" },
-          { title: "Test Coverage & CI/CD Metric", href: "/leaderboard" },
-          { title: "Mentor Code Review Level", href: "/leaderboard" },
-          { title: "Portfolio Completeness Score", href: "/leaderboard" },
-        ],
+      {
+        title: "React 19 & Next.js 15 Fullstack",
+        description: "Server components, server actions, routing, and state",
+        href: "/courses?track=web-development",
       },
-    },
+      {
+        title: "PostgreSQL & Database Design",
+        description: "Prisma ORM, relational schema modeling, and secure queries",
+        href: "/courses?track=web-development",
+      },
+    ],
+    features: [
+      {
+        title: "Portfolio Capstone Projects",
+        description: "Deploy production SaaS apps on Vercel and AWS",
+        href: "/courses",
+      },
+      {
+        title: "REST & Realtime WebSockets",
+        description: "Build live chat and collaborative application features",
+        href: "/courses",
+      },
+      {
+        title: "Authentication & Security",
+        description: "JWT, session cookies, MFA, and OAuth best practices",
+        href: "/courses",
+      },
+    ],
   },
   {
-    id: "ai-ml",
-    name: "AI & Machine Learning",
+    id: "ai-ml-data-science",
+    name: "AI & Data Science",
+    description: "Python, data analytics, machine learning, and generative AI systems",
     icon: Cpu,
-    curriculum: {
-      title: "AI & DATA SCIENCE",
-      viewAllHref: "/courses?track=ai-ml-data-science",
-      primaryItems: [
-        { title: "Applied AI & Python Roadmap", href: "/courses" },
-        {
-          title: "LLM Engineering & Agents",
-          href: "/courses",
-          badge: "🚀 Trending",
-        },
-        { title: "Deep Learning & Neural Nets", href: "/courses" },
-        { title: "Data Pipelines & MLOps", href: "/courses" },
-      ],
-      discoverItems: [
-        {
-          id: "ai-apps",
-          title: "Autonomous Agent Systems",
-          subtitle: "Build RAG and tool-calling intelligent agents",
-          href: "/courses",
-        },
-        {
-          id: "vector-dbs",
-          title: "Vector Databases & Embeddings",
-          href: "/courses",
-        },
-        {
-          id: "valuations",
-          title: "Valuations & Skill Tests",
-          href: "/courses",
-          hasSubmenu: true,
-        },
-        {
-          id: "screener",
-          title: "AI Model Screener",
-          subtitle: "Compare latency, cost, and accuracy",
-          href: "/courses",
-          isNew: true,
-        },
-        {
-          id: "scores",
-          title: "AI Engineering Scores",
-          subtitle: "Validate your generative AI proficiency",
-          href: "/leaderboard",
-          isNew: true,
-        },
-      ],
-    },
-    submenus: {
-      valuations: {
-        title: "AI EVALUATIONS",
-        items: [
-          { title: "Prompt Engineering & Evaluation", href: "/courses" },
-          { title: "RAG Retrieval Accuracy Benchmark", href: "/courses" },
-          { title: "Fine-Tuning & LoRA Practical Test", href: "/courses" },
-          { title: "LangChain & LlamaIndex Pipelines", href: "/courses" },
-          { title: "Vector Search Optimization Drills", href: "/courses" },
-          { title: "AI Guardrails & Safety Audits", href: "/courses" },
-        ],
+    accentColor: "text-[#DB2777]",
+    viewAllHref: "/courses?track=ai-ml-data-science",
+    modules: [
+      {
+        title: "Python for Data Science",
+        description: "NumPy, Pandas, data wrangling, and statistical foundations",
+        href: "/courses?track=ai-ml-data-science",
       },
-      "ai-apps": {
-        title: "AGENT PROJECTS",
-        items: [
-          { title: "Autonomous Web Research Agent", href: "/courses" },
-          { title: "Multimodal Voice Assistant", href: "/courses" },
-          { title: "Code Generation & Refactoring Bot", href: "/courses" },
-          { title: "Enterprise Knowledge Base RAG", href: "/courses" },
-          { title: "Automated Data Analyst Agent", href: "/courses" },
-          { title: "Customer Support Orchestrator", href: "/courses" },
-        ],
+      {
+        title: "Machine Learning Algorithms",
+        description: "Supervised and unsupervised learning with Scikit-Learn",
+        href: "/courses?track=ai-ml-data-science",
       },
-    },
-  },
-  {
-    id: "dsa-contests",
-    name: "Data Structures & DSA",
-    icon: Database,
-    curriculum: {
-      title: "DSA & COMPETITIVE CODING",
-      viewAllHref: "/courses",
-      primaryItems: [
-        { title: "DSA Zero to Hero Path", href: "/courses" },
-        {
-          title: "Graph Theory & Dynamic Programming",
-          href: "/courses",
-          badge: "Hard",
-        },
-        { title: "Contest Problem Archive", href: "/courses" },
-        { title: "Weekly Speed Contests", href: "/community" },
-      ],
-      discoverItems: [
-        {
-          id: "speed-arena",
-          title: "Speed Coding Arena",
-          subtitle: "Timed battles against peer developers",
-          href: "/community",
-        },
-        {
-          id: "patterns",
-          title: "14 Fundamental Coding Patterns",
-          href: "/courses",
-        },
-        {
-          id: "valuations",
-          title: "Valuations & Skill Tests",
-          href: "/courses",
-          hasSubmenu: true,
-        },
-        {
-          id: "screener",
-          title: "Problem Difficulty Screener",
-          subtitle: "Pick by acceptance rate & tags",
-          href: "/courses",
-          isNew: true,
-        },
-        {
-          id: "scores",
-          title: "Contest Elo Rating",
-          subtitle: "Live competitive rating updated weekly",
-          href: "/leaderboard",
-          isNew: true,
-        },
-      ],
-    },
-    submenus: {
-      valuations: {
-        title: "ALGORITHMIC VALUATIONS",
-        items: [
-          { title: "Top P/E Algorithmic Puzzles", href: "/courses" },
-          { title: "Graph Cycle & Shortest Path Drill", href: "/courses" },
-          { title: "0/1 Knapsack & DP Variations", href: "/courses" },
-          { title: "Bit Manipulation Mastery", href: "/courses" },
-          { title: "Trie & String Matching Tests", href: "/courses" },
-          { title: "Monotonic Stack & Queue Tasks", href: "/courses" },
-        ],
+      {
+        title: "Deep Learning & Neural Networks",
+        description: "PyTorch fundamentals, computer vision, and NLP models",
+        href: "/courses?track=ai-ml-data-science",
       },
-    },
-  },
-  {
-    id: "interactive-labs",
-    name: "Interactive Labs",
-    icon: Terminal,
-    isNew: true,
-    curriculum: {
-      title: "INTERACTIVE CODE LABS",
-      viewAllHref: "/courses",
-      primaryItems: [
-        { title: "In-Browser Cloud Linux Terminals", href: "/courses" },
-        {
-          title: "Realtime Collaborative Coding",
-          href: "/courses",
-          badge: "✨ Live",
-        },
-        { title: "Bug Hunting Simulator", href: "/courses" },
-        { title: "Database Query Playground", href: "/courses" },
-      ],
-      discoverItems: [
-        {
-          id: "cloud-ide",
-          title: "Instant Web IDE",
-          subtitle: "Run Node.js, Python, & Go with zero install",
-          href: "/courses",
-        },
-        {
-          id: "live-pairing",
-          title: "Peer-to-Peer Pair Programming",
-          href: "/community",
-        },
-        {
-          id: "valuations",
-          title: "Valuations & Skill Tests",
-          href: "/courses",
-          hasSubmenu: true,
-        },
-        {
-          id: "screener",
-          title: "Lab Environment Screener",
-          subtitle: "Choose runtime, memory, and stack",
-          href: "/courses",
-          isNew: true,
-        },
-        {
-          id: "scores",
-          title: "Terminal Mastery Scores",
-          subtitle: "Command-line speed & troubleshooting badge",
-          href: "/leaderboard",
-          isNew: true,
-        },
-      ],
-    },
-    submenus: {
-      valuations: {
-        title: "HANDS-ON LAB TESTS",
-        items: [
-          { title: "Linux Shell Scripting Challenge", href: "/courses" },
-          { title: "SQL Optimization Playground", href: "/courses" },
-          { title: "Git Conflict Resolution Drill", href: "/courses" },
-          { title: "Docker Containerization Lab", href: "/courses" },
-          { title: "Microservice Debugging Arena", href: "/courses" },
-          { title: "CI/CD Pipeline Troubleshooting", href: "/courses" },
-        ],
+      {
+        title: "LLMs & Agentic AI Systems",
+        description: "RAG architectures, prompt engineering, and intelligent agents",
+        href: "/courses?track=ai-ml-data-science",
       },
-    },
+    ],
+    features: [
+      {
+        title: "AI Tutor Integration",
+        description: "Instant personalized hints and debugging assistance",
+        href: "/courses",
+      },
+      {
+        title: "Kaggle & Dataset Projects",
+        description: "Hands-on analysis of real-world industry datasets",
+        href: "/courses",
+      },
+      {
+        title: "Model Deployment & APIs",
+        description: "Serve predictions via FastAPI and cloud endpoints",
+        href: "/courses",
+      },
+    ],
   },
 ];
 
@@ -450,33 +186,13 @@ export function ProgramsMegaMenu({
   onOpenChange: (open: boolean) => void;
 }) {
   const [selectedTrackId, setSelectedTrackId] = useState("logic-building");
-  const [selectedSubmenuId, setSelectedSubmenuId] = useState("valuations");
 
   const currentTrack =
-    TRACKS_DATA.find((t) => t.id === selectedTrackId) || TRACKS_DATA[0];
-
-  const currentSubmenu =
-    currentTrack.submenus[selectedSubmenuId] ||
-    currentTrack.submenus["valuations"] || {
-      title: "VALUATIONS",
-      items: [
-        { title: "Top P/E Coding Drills", href: "/courses" },
-        { title: "Time & Space Complexity Tests", href: "/courses" },
-        { title: "Top Scoring Algorithmic Tasks", href: "/courses" },
-        { title: "Large Scale Logic Tests", href: "/courses" },
-        { title: "99th Percentile Challenges", href: "/courses" },
-        { title: "Beginner Diagnostic Assessment", href: "/courses" },
-      ],
-    };
+    REAL_TRACKS.find((t) => t.id === selectedTrackId) || REAL_TRACKS[0];
 
   return (
-    <div
-      className="relative"
-      onMouseLeave={() => {
-        // slight delay can be added or handled by parent hover
-      }}
-    >
-      {/* Trigger Button (like Markets ⌄ in the screenshot) */}
+    <div className="relative">
+      {/* Trigger Button */}
       <button
         type="button"
         onClick={() => onOpenChange(!isOpen)}
@@ -497,10 +213,9 @@ export function ProgramsMegaMenu({
         />
       </button>
 
-      {/* Floating 3-Column Mega Menu Card */}
+      {/* Floating 3-Column Cascading Mega Menu */}
       {isOpen && (
         <>
-          {/* Backdrop to close on outside click */}
           <div
             className="fixed inset-0 z-30"
             onClick={() => onOpenChange(false)}
@@ -509,39 +224,33 @@ export function ProgramsMegaMenu({
           <div
             className={cn(
               "absolute left-0 top-full z-40 mt-2.5 flex overflow-hidden rounded-2xl border border-border/80 bg-background/98 p-0 shadow-2xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95 duration-150",
-              "w-[860px] max-w-[94vw]"
+              "w-[780px] max-w-[92vw]"
             )}
             style={{
               boxShadow:
                 "0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)",
             }}
           >
-            {/* COLUMN 1: TRACK CATEGORIES (~210px) */}
-            <div className="w-56 shrink-0 border-r border-border/70 bg-surface/50 p-3">
+            {/* COLUMN 1: 3 REAL TRACKS (~200px) */}
+            <div className="w-52 shrink-0 border-r border-border/70 bg-surface/50 p-3">
               <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
-                TRACKS
+                LEARNING TRACKS
               </div>
 
               <div className="flex flex-col gap-1">
-                {TRACKS_DATA.map((track) => {
+                {REAL_TRACKS.map((track) => {
                   const Icon = track.icon;
                   const isActive = track.id === selectedTrackId;
                   return (
                     <button
                       key={track.id}
                       type="button"
-                      onMouseEnter={() => {
-                        setSelectedTrackId(track.id);
-                        setSelectedSubmenuId("valuations");
-                      }}
-                      onClick={() => {
-                        setSelectedTrackId(track.id);
-                        setSelectedSubmenuId("valuations");
-                      }}
+                      onMouseEnter={() => setSelectedTrackId(track.id)}
+                      onClick={() => setSelectedTrackId(track.id)}
                       className={cn(
                         "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-all",
                         isActive
-                          ? "bg-slate-200/70 font-semibold text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white"
+                          ? "bg-slate-200/80 font-semibold text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white"
                           : "text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-850 dark:hover:text-white"
                       )}
                     >
@@ -549,151 +258,92 @@ export function ProgramsMegaMenu({
                         <Icon
                           className={cn(
                             "size-4 shrink-0 transition-colors",
-                            isActive
-                              ? "text-primary"
-                              : "text-muted-foreground group-hover:text-foreground"
+                            isActive ? track.accentColor : "text-muted-foreground"
                           )}
                         />
                         <span className="truncate">{track.name}</span>
-                        {track.isNew && (
-                          <span className="rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                            New
-                          </span>
-                        )}
                       </div>
                       <ChevronRight
                         className={cn(
                           "size-3.5 shrink-0 transition-transform",
                           isActive
                             ? "text-slate-900 dark:text-white"
-                            : "text-muted-foreground/50 group-hover:text-muted-foreground"
+                            : "text-muted-foreground/40 group-hover:text-muted-foreground"
                         )}
                       />
                     </button>
                   );
                 })}
               </div>
+
+              <div className="mt-4 pt-3 border-t border-border/60 px-3">
+                <Link
+                  href="/courses"
+                  onClick={() => onOpenChange(false)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                >
+                  <GraduationCap className="size-3.5" />
+                  <span>Browse All Courses</span>
+                </Link>
+              </div>
             </div>
 
-            {/* COLUMN 2: TRACK CURRICULUM & DISCOVER (~310px) */}
-            <div className="w-80 shrink-0 border-r border-border/70 p-4">
-              {/* Header row */}
+            {/* COLUMN 2: TRACK CORE MODULES (~320px) */}
+            <div className="w-72 shrink-0 border-r border-border/70 p-4">
               <div className="mb-3 flex items-center justify-between px-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                  {currentTrack.curriculum.title}
+                  CURRICULUM MODULES
                 </span>
                 <Link
-                  href={currentTrack.curriculum.viewAllHref}
+                  href={currentTrack.viewAllHref}
                   onClick={() => onOpenChange(false)}
                   className="group flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary transition-colors"
                 >
-                  <span>View all</span>
+                  <span>View track</span>
                   <ChevronRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </div>
 
-              {/* Primary links */}
-              <div className="flex flex-col gap-0.5">
-                {currentTrack.curriculum.primaryItems.map((item, idx) => (
+              <div className="flex flex-col gap-1">
+                {currentTrack.modules.map((mod, idx) => (
                   <Link
                     key={idx}
-                    href={item.href}
+                    href={mod.href}
                     onClick={() => onOpenChange(false)}
-                    className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-800 transition-colors hover:bg-muted/80 hover:text-primary dark:text-slate-200"
+                    className="rounded-lg p-2 transition-colors hover:bg-muted/80 block group"
                   >
-                    <span className="font-medium">{item.title}</span>
-                    {item.badge && (
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                        {item.badge}
-                      </span>
-                    )}
+                    <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {mod.title}
+                    </div>
+                    <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+                      {mod.description}
+                    </p>
                   </Link>
                 ))}
               </div>
-
-              <div className="my-3 border-t border-border/70" />
-
-              {/* Discover subsection */}
-              <div className="px-2 py-1 text-[11px] font-bold text-muted-foreground/70">
-                Discover
-              </div>
-
-              <div className="flex flex-col gap-1">
-                {currentTrack.curriculum.discoverItems.map((item) => {
-                  const isHovered = selectedSubmenuId === item.id;
-                  return (
-                    <div
-                      key={item.id}
-                      onMouseEnter={() => {
-                        if (currentTrack.submenus[item.id]) {
-                          setSelectedSubmenuId(item.id);
-                        }
-                      }}
-                      className={cn(
-                        "group flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-1.5 transition-all",
-                        isHovered && item.hasSubmenu
-                          ? "bg-slate-200/80 font-semibold text-slate-900 dark:bg-slate-800 dark:text-white"
-                          : "hover:bg-muted/80 text-foreground"
-                      )}
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={() => onOpenChange(false)}
-                        className="flex-1 min-w-0"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {item.title}
-                          </span>
-                          {item.isNew && (
-                            <span className="rounded-full bg-rose-500/10 px-1.5 py-0.2 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                              New
-                            </span>
-                          )}
-                        </div>
-                        {item.subtitle && (
-                          <p className="truncate text-[11px] text-muted-foreground">
-                            {item.subtitle}
-                          </p>
-                        )}
-                      </Link>
-
-                      {item.hasSubmenu && (
-                        <ChevronRight
-                          className={cn(
-                            "size-3.5 shrink-0 transition-colors ml-2",
-                            isHovered
-                              ? "text-slate-900 dark:text-white"
-                              : "text-muted-foreground/60"
-                          )}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* COLUMN 3: VALUATIONS & SUBMENU ITEMS (~320px) */}
+            {/* COLUMN 3: MENTOR & PLATFORM FEATURES (~260px) */}
             <div className="flex-1 p-4 bg-surface/30">
               <div className="mb-3 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
-                {currentSubmenu.title}
+                WHAT YOU GET
               </div>
 
-              <div className="flex flex-col gap-1">
-                {currentSubmenu.items.map((sub, idx) => (
+              <div className="flex flex-col gap-2">
+                {currentTrack.features.map((feat, idx) => (
                   <Link
                     key={idx}
-                    href={sub.href}
+                    href={feat.href}
                     onClick={() => onOpenChange(false)}
-                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    className="rounded-lg p-2.5 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-800 block group"
                   >
-                    <span>{sub.title}</span>
-                    {sub.badge && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        {sub.badge}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <Sparkles className="size-3 text-primary shrink-0" />
+                      <span>{feat.title}</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                      {feat.description}
+                    </p>
                   </Link>
                 ))}
               </div>

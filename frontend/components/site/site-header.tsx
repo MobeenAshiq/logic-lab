@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Menu,
-  Search,
-  Sparkles,
-  User,
-  Zap,
-} from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -19,15 +13,12 @@ import { t } from "@/lib/i18n";
 
 import { NotificationsBell } from "@/components/notifications/notifications-bell";
 import { ProgramsMegaMenu } from "@/components/site/programs-mega-menu";
-import { ToolsDropdown } from "@/components/site/tools-dropdown";
 import { SearchDialog } from "@/components/site/search-dialog";
-import { AnnouncementsPopover } from "@/components/site/announcements-popover";
 import { LivePlatformTicker } from "@/components/site/live-platform-ticker";
-import { cn } from "@/lib/utils";
 
 function AuthButtons({ onNavigate }: { onNavigate?: () => void }) {
   const { data: me, isLoading } = useMe();
-  if (isLoading) return <div className="h-8 w-28 animate-pulse rounded-lg bg-muted" />;
+  if (isLoading) return <div className="h-8 w-24 animate-pulse rounded-lg bg-muted" />;
 
   if (me) {
     const initials = me.user.fullName
@@ -80,28 +71,24 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-md transition-all">
-      {/* 1. Main Navbar */}
-      <div className="mx-auto flex h-15 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      {/* 1. Main Navigation Bar */}
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         {/* Left: Brand Logo & Navigation */}
         <div className="flex items-center gap-6">
           <Logo />
 
           <nav className="hidden items-center gap-1 text-sm lg:flex">
-            {/* 3-Column Cascading Mega Menu (like Markets in the screenshot) */}
+            {/* 3-Column Cascading Mega Menu */}
             <ProgramsMegaMenu
               isOpen={megaMenuOpen}
               onOpenChange={setMegaMenuOpen}
             />
 
-            {/* Tools Dropdown */}
-            <ToolsDropdown />
-
-            {/* Main Links */}
             <Link
               href="/courses"
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
             >
-              Curriculum
+              {t.common.nav.courses}
             </Link>
 
             <Link
@@ -124,22 +111,10 @@ export function SiteHeader() {
             >
               {t.common.nav.pricing}
             </Link>
-
-            {/* AI TUTOR with NEW Badge (like SCAN NEW in screenshot) */}
-            <Link
-              href="/courses"
-              className="group flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
-            >
-              <Sparkles className="size-3.5 text-teal-600 dark:text-teal-400 group-hover:rotate-12 transition-transform" />
-              <span>AI TUTOR</span>
-              <span className="rounded-full bg-teal-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                NEW
-              </span>
-            </Link>
           </nav>
         </div>
 
-        {/* Right: Actions, Search, Notifications, Avatar */}
+        {/* Right: Search, Notifications, Theme Toggle, Auth */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Quick Search Button */}
           <button
@@ -152,10 +127,7 @@ export function SiteHeader() {
             <Search className="size-4.5 group-hover:scale-105 transition-transform" />
           </button>
 
-          {/* Announcements Popover */}
-          <AnnouncementsPopover />
-
-          {/* Notifications Bell with Counter */}
+          {/* Notifications Bell */}
           <div className="relative">
             <NotificationsBell />
           </div>
@@ -167,12 +139,12 @@ export function SiteHeader() {
             <ThemeToggle />
           </div>
 
-          {/* User Auth / Profile */}
+          {/* User Auth Buttons */}
           <div className="hidden md:flex items-center">
             <AuthButtons />
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu */}
           <div className="flex items-center gap-1 lg:hidden">
             <ThemeToggle />
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -191,10 +163,9 @@ export function SiteHeader() {
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Tracks Section */}
                   <div>
                     <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Programs & Tracks
+                      Learning Tracks
                     </div>
                     <div className="grid gap-1 mt-1">
                       <Link
@@ -218,18 +189,15 @@ export function SiteHeader() {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                       >
-                        <span>AI & Data Science</span>
-                        <span className="rounded-full bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-bold text-teal-600">
-                          Hot
-                        </span>
+                        <span>AI &amp; Data Science</span>
+                        <span className="text-xs text-muted-foreground">Python &amp; ML</span>
                       </Link>
                     </div>
                   </div>
 
-                  {/* General Links */}
                   <div>
                     <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Explore
+                      Navigation
                     </div>
                     <div className="grid gap-1 mt-1">
                       <Link
@@ -237,28 +205,28 @@ export function SiteHeader() {
                         onClick={() => setMobileOpen(false)}
                         className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                       >
-                        All Courses
+                        {t.common.nav.courses}
                       </Link>
                       <Link
                         href="/community"
                         onClick={() => setMobileOpen(false)}
                         className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                       >
-                        Community & Doubts
+                        {t.community.nav}
                       </Link>
                       <Link
                         href="/leaderboard"
                         onClick={() => setMobileOpen(false)}
                         className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                       >
-                        Student Leaderboard
+                        {t.realtime.leaderboard.nav}
                       </Link>
                       <Link
                         href="/pricing"
                         onClick={() => setMobileOpen(false)}
                         className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                       >
-                        Pricing & Plans
+                        {t.common.nav.pricing}
                       </Link>
                     </div>
                   </div>
@@ -273,7 +241,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* 2. Live Platform Ticker Bar */}
+      {/* 2. Real Platform Stats Ticker */}
       <LivePlatformTicker />
 
       {/* 3. Search Dialog Modal */}
