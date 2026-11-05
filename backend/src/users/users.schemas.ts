@@ -15,8 +15,9 @@ export const changeRoleSchema = z.strictObject({
   reason,
 });
 
+/** Admins approve (-> active) or ban; nobody is moved back to `pending`. */
 export const changeStatusSchema = z.strictObject({
-  status: z.enum(UserStatus),
+  status: z.enum([UserStatus.active, UserStatus.banned]),
   reason,
 });
 

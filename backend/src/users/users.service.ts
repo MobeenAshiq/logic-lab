@@ -141,7 +141,11 @@ export class UsersService {
       await this.audit.log(
         {
           actorId: auth.id,
-          action: banned ? 'user.banned' : 'user.unbanned',
+          action: banned
+            ? 'user.banned'
+            : target.status === UserStatus.pending
+              ? 'user.approved'
+              : 'user.unbanned',
           targetType: 'user',
           targetId,
           metadata: { reason: input.reason },

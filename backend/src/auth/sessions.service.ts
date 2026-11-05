@@ -133,6 +133,9 @@ export class SessionsService {
         reason: session.user.profile.bannedReason,
       });
     }
+    if (session.user.profile?.status === UserStatus.pending) {
+      throw new AppException(HttpStatus.FORBIDDEN, 'ACCOUNT_PENDING');
+    }
 
     const nextSecret = randomToken();
     await this.prisma.userSession.update({

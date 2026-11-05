@@ -122,6 +122,9 @@ export class AuthGuard implements CanActivate {
         reason: profile.bannedReason,
       });
     }
+    if (profile.status === UserStatus.pending) {
+      throw new AppException(HttpStatus.FORBIDDEN, 'ACCOUNT_PENDING');
+    }
 
     req.auth = {
       id: session.userId,
