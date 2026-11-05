@@ -15,8 +15,10 @@ case "$(uname -m)" in
   *) echo "Unsupported CPU: $(uname -m)" >&2; exit 1 ;;
 esac
 
-VERSION=$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest \
-  | grep -m1 '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+# Read the whole response first: piping curl into `grep -m1` breaks it under pipefail.
+RELEASE=$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest)
+VERSION=$(printf '%s' "$RELEASE" | grep '"tag_name"' | head -n1 | sed -E 's/.*"v([^"]+)".*/\1/')
+[ -n "$VERSION" ] || { echo "Could not find the latest runner version" >&2; exit 1; }
 echo "• Installing GitHub runner $VERSION ($ARCH) in $DIR"
 mkdir -p "$DIR" && cd "$DIR"
 curl -fsSL -o runner.tar.gz \
