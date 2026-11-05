@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
+import { MentorAiUsage, teachUsageKey } from "@/components/ai/mentor-ai-usage";
 import { toastError } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -92,6 +93,7 @@ function Grader({ sub, backHref }: { sub: SubmissionForGrader; backHref: string 
       toast.message("AI feedback draft added. Review and edit it before returning the submission.");
     },
     onError: toastError,
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: teachUsageKey }),
   });
 
   /** Validates the form; returns the request body or null (and shows field errors). */
@@ -248,6 +250,7 @@ function Grader({ sub, backHref }: { sub: SubmissionForGrader; backHref: string 
             <Button type="button" size="sm" variant="outline" disabled={suggest.isPending || sub.status === "draft"} onClick={() => suggest.mutate()}>
               <Sparkles className="mr-1 size-4" />{suggest.isPending ? "Drafting feedback…" : "Suggest feedback with AI"}
             </Button>
+            <MentorAiUsage />
 
             {returned && sub.returnedAt && (
               <p className="text-muted-foreground text-xs">
