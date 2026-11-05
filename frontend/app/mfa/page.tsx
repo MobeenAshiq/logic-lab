@@ -1,8 +1,8 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { AuthCard, CodeInput, FormAlert } from "@/components/auth/auth-ui";
 import { Logo } from "@/components/logo";
@@ -10,15 +10,13 @@ import { Spinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
-import { afterLoginPath, ME_KEY, useLogout, useMe } from "@/lib/auth";
+import { afterLoginPath, useLogout, useMe } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
-import type { MfaSetup } from "@/types/api";
+import type { MfaSetup, Role } from "@/types/api";
 
 function MfaFlow() {
-  const router = useRouter();
   const next = useSearchParams().get("next");
-  const queryClient = useQueryClient();
   const { data: me } = useMe();
   const logout = useLogout();
   const [code, setCode] = useState("");
@@ -37,15 +35,24 @@ function MfaFlow() {
     }
   }, [mode, setup]);
 
+  // Full page load, not router.replace: the client router may hold a prefetched
+  // redirect (portal -> /mfa) cached from before 2FA was done, which loops back here.
+  const leave = (role: Role) => window.location.replace(afterLoginPath(role, "none", next));
+
+  // Already verified (e.g. back button or a stale redirect): don't show the form again.
+  useEffect(() => {
+    if (me && mode === "none") leave(me.user.role);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me, mode]);
+
   const submit = useMutation({
     mutationFn: (value: string) =>
       api(mode === "setup" ? "/auth/mfa/enable" : "/auth/mfa/verify", {
         method: "POST",
         body: { code: value },
       }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ME_KEY });
-      if (me) router.replace(afterLoginPath(me.user.role, "none", next));
+    onSuccess: () => {
+      if (me) leave(me.user.role);
     },
     onError: (err) => {
       setError(errorMessage(err));
@@ -58,7 +65,7 @@ function MfaFlow() {
     submit.mutate(value);
   };
 
-  if (!me) {
+  if (!me || mode === "none") {
     return <Skeleton className="h-80 w-full rounded-xl" />;
   }
 
