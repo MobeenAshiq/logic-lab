@@ -57,7 +57,13 @@ export class StudentBillingController {
       this.payments.listMine(user.id),
       this.settings.get('payment_instructions'),
     ]);
-    return { ...access, plans, payments, paymentInstructions: instructions };
+    return {
+      ...access,
+      plans,
+      payments,
+      paymentInstructions: instructions,
+      slipUploads: this.payments.slipUploadsEnabled,
+    };
   }
 
   @Roles(Role.student)

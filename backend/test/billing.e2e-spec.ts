@@ -519,7 +519,7 @@ describe('Phase 3: free trial, payments and invoices', () => {
       await other.agent.get(`/learn/lessons/${fixtures.lessonA}`).expect(403);
 
       // Same transaction ID is allowed again for the same student after a rejection.
-      const slip4 = await uploadSlip(other.agent);
+      // The slip is optional: this retry sends only the transaction details.
       const retry = await other.agent
         .post('/student/payments')
         .send({
@@ -528,10 +528,14 @@ describe('Phase 3: free trial, payments and invoices', () => {
           transactionId: ocrTxn,
           amount: 3000,
           paidAt: today(),
-          slipKey: slip4,
         })
         .expect(201);
       expect(retry.body.id).toBe(first.body.id);
+      const noSlip = await admin
+        .get(`/admin/payments/${retry.body.id}`)
+        .expect(200);
+      expect(noSlip.body.slipUrl).toBeNull();
+      expect(noSlip.body.warnings[0]).toMatch(/No slip attached/);
 
       const approved = await admin
         .post(`/admin/payments/${retry.body.id}/approve`)

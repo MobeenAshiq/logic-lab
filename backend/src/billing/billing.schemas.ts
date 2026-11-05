@@ -73,7 +73,8 @@ export const submitPaymentSchema = z.strictObject({
   amount: z.number().int().min(1).max(1_000_000),
   /** Date on the slip, YYYY-MM-DD. */
   paidAt: z.iso.date(),
-  slipKey: z.string().max(200),
+  /** Optional proof of payment; admins can verify by transaction ID alone. */
+  slipKey: z.string().max(200).nullable().optional(),
   ocrText: z.string().max(20_000).nullable().optional(),
 });
 

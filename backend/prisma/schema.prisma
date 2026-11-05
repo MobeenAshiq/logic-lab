@@ -408,7 +408,8 @@ model Payment {
   /// Plan price after coupon at the time of submission.
   expectedAmount Int           @map("expected_amount")
   paidAt         DateTime      @map("paid_at") @db.Date
-  slipKey        String        @map("slip_key")
+  /// Optional: students can pay with just the transaction ID (e.g. when uploads are off).
+  slipKey        String?       @map("slip_key")
   /// Text read from the slip by Tesseract.js in the browser.
   ocrText        String?       @map("ocr_text")
   status         PaymentStatus @default(pending)

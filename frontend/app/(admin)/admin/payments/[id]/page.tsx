@@ -53,6 +53,16 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 function SlipPreview({ payment }: { payment: AdminPaymentDetail }) {
+  if (!payment.slipKey || !payment.slipUrl) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{s.slip}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-muted-foreground text-sm">{s.noSlip}</CardContent>
+      </Card>
+    );
+  }
   const isPdf = payment.slipKey.toLowerCase().endsWith(".pdf");
   return (
     <Card>

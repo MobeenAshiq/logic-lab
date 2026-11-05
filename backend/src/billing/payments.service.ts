@@ -54,6 +54,11 @@ export class PaymentsService {
 
   // --- Student ---
 
+  /** Whether students can attach a slip (file storage is set up). */
+  get slipUploadsEnabled() {
+    return this.r2.isConfigured;
+  }
+
   /** Step 1: presigned URL to upload the slip to slips/<userId>/... */
   async slipUploadUrl(auth: AuthUser, input: SlipUploadInput) {
     const key = newUploadKey('payment-slip', input.contentType, auth.id);
@@ -71,8 +76,9 @@ export class PaymentsService {
     const quote = await this.plans.quote(input.planId, input.couponCode);
     this.assertPaidAt(input.paidAt);
     if (
-      !isUploadKey('payment-slip', input.slipKey, auth.id) ||
-      !(await this.r2.exists(input.slipKey))
+      input.slipKey &&
+      (!isUploadKey('payment-slip', input.slipKey, auth.id) ||
+        !(await this.r2.exists(input.slipKey)))
     ) {
       throw new AppException(HttpStatus.BAD_REQUEST, 'SLIP_NOT_UPLOADED');
     }
@@ -139,7 +145,7 @@ export class PaymentsService {
           amount: input.amount,
           expectedAmount: quote.total,
           paidAt: new Date(input.paidAt),
-          slipKey: input.slipKey,
+          slipKey: input.slipKey ?? null,
           ocrText: input.ocrText ?? null,
           status: PaymentStatus.pending,
           reviewedBy: null,
@@ -178,7 +184,7 @@ export class PaymentsService {
     const payment = await this.prisma.payment.findFirst({
       where: { id: paymentId, userId: auth.id },
     });
-    if (!payment)
+    if (!payment?.slipKey)
       throw new AppException(HttpStatus.NOT_FOUND, 'PAYMENT_NOT_FOUND');
     return { url: await this.r2.getDownloadUrl(payment.slipKey) };
   }
@@ -225,7 +231,9 @@ export class PaymentsService {
     return {
       ...payment,
       warnings: ocrWarnings(payment),
-      slipUrl: await this.r2.getDownloadUrl(payment.slipKey),
+      slipUrl: payment.slipKey
+        ? await this.r2.getDownloadUrl(payment.slipKey)
+        : null,
       previousPayments,
     };
   }

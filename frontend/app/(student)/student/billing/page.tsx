@@ -195,6 +195,7 @@ function Checkout({
             coupon={coupon}
             total={quote.data?.total}
             instructions={billing.paymentInstructions}
+            slipUploads={billing.slipUploads}
           />
         )}
       </div>
@@ -371,11 +372,13 @@ function SlipForm({
   coupon,
   total,
   instructions,
+  slipUploads,
 }: {
   planId: string;
   coupon: string | null;
   total?: number;
   instructions: PaymentInstructions;
+  slipUploads: boolean;
 }) {
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -426,8 +429,8 @@ function SlipForm({
 
   const submit = useMutation({
     mutationFn: async (values: SlipOutput) => {
-      if (!file) throw new Error(tb.slip);
-      const slipKey = await uploadFile("/student/payments/upload-url", file);
+      // The slip is optional; admins can verify by transaction ID alone.
+      const slipKey = file ? await uploadFile("/student/payments/upload-url", file) : null;
       return api<StudentPayment>("/student/payments", {
         method: "POST",
         body: {
@@ -435,7 +438,7 @@ function SlipForm({
           planId,
           couponCode: coupon ?? undefined,
           slipKey,
-          ocrText: ocr.status === "done" ? ocr.text : null,
+          ocrText: file && ocr.status === "done" ? ocr.text : null,
         },
       });
     },
@@ -452,13 +455,7 @@ function SlipForm({
     },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    if (!file) {
-      setFileError(tb.slip);
-      return;
-    }
-    submit.mutate(values);
-  });
+  const onSubmit = form.handleSubmit((values) => submit.mutate(values));
   const errors = form.formState.errors;
 
   return (
@@ -507,37 +504,39 @@ function SlipForm({
               <Input id="paidAt" type="date" max={todayIso()} {...form.register("paidAt")} />
             </Field>
           </div>
-          <Field label={tb.slip} error={fileError ?? undefined}>
-            <input
-              ref={fileInput}
-              type="file"
-              accept={SLIP_TYPES.join(",")}
-              className="sr-only"
-              onChange={(e) => void onFile(e.target.files?.[0])}
-            />
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              className="hover:border-primary/50 hover:bg-muted/40 flex items-center gap-3 rounded-lg border border-dashed p-4 text-left text-sm transition-colors"
-            >
-              {file ? (
-                <FileText className="text-primary size-5 shrink-0" />
-              ) : (
-                <Upload className="text-muted-foreground size-5 shrink-0" />
+          {slipUploads && (
+            <Field label={tb.slip} error={fileError ?? undefined}>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={SLIP_TYPES.join(",")}
+                className="sr-only"
+                onChange={(e) => void onFile(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                className="hover:border-primary/50 hover:bg-muted/40 flex items-center gap-3 rounded-lg border border-dashed p-4 text-left text-sm transition-colors"
+              >
+                {file ? (
+                  <FileText className="text-primary size-5 shrink-0" />
+                ) : (
+                  <Upload className="text-muted-foreground size-5 shrink-0" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{file ? file.name : tb.chooseFile}</span>
+              </button>
+              {ocr.status === "reading" && (
+                <div className="text-muted-foreground grid gap-1 text-xs">
+                  <span>{tb.reading}</span>
+                  <Progress value={ocr.progress * 100} />
+                </div>
               )}
-              <span className="min-w-0 flex-1 truncate">{file ? file.name : tb.chooseFile}</span>
-            </button>
-            {ocr.status === "reading" && (
-              <div className="text-muted-foreground grid gap-1 text-xs">
-                <span>{tb.reading}</span>
-                <Progress value={ocr.progress * 100} />
-              </div>
-            )}
-            {ocr.status === "done" && <p className="text-success text-xs">{tb.readDone}</p>}
-            {ocr.status === "skipped" && (
-              <p className="text-muted-foreground text-xs">{tb.readSkipped}</p>
-            )}
-          </Field>
+              {ocr.status === "done" && <p className="text-success text-xs">{tb.readDone}</p>}
+              {ocr.status === "skipped" && (
+                <p className="text-muted-foreground text-xs">{tb.readSkipped}</p>
+              )}
+            </Field>
+          )}
           <Button
             type="submit"
             disabled={submit.isPending || ocr.status === "reading"}
