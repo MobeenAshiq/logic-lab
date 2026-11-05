@@ -7,8 +7,10 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Res,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import type { Response } from 'express';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser, Public, Roles } from '../auth/decorators';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -57,7 +59,13 @@ export class StudentBillingController {
       this.payments.listMine(user.id),
       this.settings.get('payment_instructions'),
     ]);
-    return { ...access, plans, payments, paymentInstructions: instructions };
+    return {
+      ...access,
+      plans,
+      payments,
+      paymentInstructions: instructions,
+      slipUploads: this.payments.slipUploadsEnabled,
+    };
   }
 
   @Roles(Role.student)
@@ -115,5 +123,22 @@ export class StudentBillingController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.invoices.downloadUrl(user, id);
+  }
+
+  /** The invoice PDF itself (owner or admin), used when file storage is off. */
+  @Get('invoices/:id/pdf')
+  async invoicePdf(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ) {
+    const { invoiceNo, pdf } = await this.invoices.pdf(user, id);
+    res
+      .set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${invoiceNo}.pdf"`,
+        'Cache-Control': 'private, no-store',
+      })
+      .send(pdf);
   }
 }

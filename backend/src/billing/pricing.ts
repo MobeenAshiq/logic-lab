@@ -61,6 +61,7 @@ export function trialEmailKey(email: string) {
  */
 export function ocrWarnings(p: {
   ocrText: string | null;
+  slipKey?: string | null;
   amount: number;
   expectedAmount: number;
   transactionId: string;
@@ -70,6 +71,12 @@ export function ocrWarnings(p: {
     warnings.push(
       `Amount entered (Rs ${p.amount}) differs from the plan price (Rs ${p.expectedAmount}).`,
     );
+  }
+  if (!p.slipKey) {
+    warnings.push(
+      'No slip attached: check the transaction ID in your EasyPaisa, JazzCash or bank account.',
+    );
+    return warnings;
   }
   if (!p.ocrText) {
     warnings.push('No text could be read from the slip.');

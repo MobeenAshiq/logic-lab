@@ -45,7 +45,8 @@ export class InvoicesService {
 
   /**
    * Inside the approval transaction: takes the next gapless number
-   * (INV-2026-00001), renders the PDF, stores it in R2, and saves the invoice row.
+   * (INV-2026-00001), renders the PDF, stores it in R2 (when file storage is set
+   * up), and saves the invoice row. Without R2 the PDF is rebuilt on download.
    * If anything fails, the whole approval rolls back (and the number is not used).
    */
   async issue(tx: Prisma.TransactionClient, src: InvoiceSource) {
@@ -60,24 +61,13 @@ export class InvoicesService {
     const invoiceNo = `INV-${year}-${String(last_no).padStart(5, '0')}`;
 
     const { payment } = src;
-    const pdf = await renderInvoicePdf({
-      invoiceNo,
-      issuedAt: now,
-      customerName: payment.user.profile?.fullName ?? '',
-      customerEmail: payment.user.email,
-      planName: payment.plan.name,
-      periodStart: src.periodStart,
-      periodEnd: src.periodEnd,
-      pricePkr: payment.plan.pricePkr,
-      discountPkr: payment.plan.pricePkr - payment.expectedAmount,
-      couponCode: payment.coupon?.code ?? null,
-      totalPkr: payment.amount,
-      method: METHOD_LABEL[payment.method],
-      transactionId: payment.transactionId,
-    });
+    const pdf = await this.render(invoiceNo, now, src);
 
-    const pdfKey = `invoices/${payment.userId}/${invoiceNo}.pdf`;
-    await this.r2.putObject(pdfKey, pdf, 'application/pdf');
+    let pdfKey: string | null = null;
+    if (this.r2.isConfigured) {
+      pdfKey = `invoices/${payment.userId}/${invoiceNo}.pdf`;
+      await this.r2.putObject(pdfKey, pdf, 'application/pdf');
+    }
 
     const invoice = await tx.invoice.create({
       data: {
@@ -113,36 +103,86 @@ export class InvoicesService {
     return sent;
   }
 
-  /** Students can download only their own invoices; admins any. */
-  async downloadUrl(auth: AuthUser, invoiceId: string) {
+  private render(invoiceNo: string, issuedAt: Date, src: InvoiceSource) {
+    const { payment } = src;
+    return renderInvoicePdf({
+      invoiceNo,
+      issuedAt,
+      customerName: payment.user.profile?.fullName ?? '',
+      customerEmail: payment.user.email,
+      planName: payment.plan.name,
+      periodStart: src.periodStart,
+      periodEnd: src.periodEnd,
+      pricePkr: payment.plan.pricePkr,
+      discountPkr: payment.plan.pricePkr - payment.expectedAmount,
+      couponCode: payment.coupon?.code ?? null,
+      totalPkr: payment.amount,
+      method: METHOD_LABEL[payment.method],
+      transactionId: payment.transactionId,
+    });
+  }
+
+  /** Students can see only their own invoices; admins any. */
+  private async find(auth: AuthUser, invoiceId: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id: invoiceId,
         ...(ADMIN_ROLES.includes(auth.role) ? {} : { userId: auth.id }),
       },
+      include: {
+        payment: {
+          include: {
+            user: { include: { profile: true } },
+            plan: true,
+            coupon: true,
+            subscription: true,
+          },
+        },
+      },
     });
-    if (!invoice?.pdfKey) {
+    if (!invoice) {
       throw new AppException(HttpStatus.NOT_FOUND, 'INVOICE_NOT_FOUND');
     }
-    return {
-      invoiceNo: invoice.invoiceNo,
-      url: await this.r2.getDownloadUrl(invoice.pdfKey),
-    };
+    return invoice;
+  }
+
+  /** The stored PDF, or (without file storage) one rebuilt from the database. */
+  private async pdfOf(invoice: Awaited<ReturnType<InvoicesService['find']>>) {
+    if (invoice.pdfKey && this.r2.isConfigured) {
+      return this.r2.getObject(invoice.pdfKey);
+    }
+    const { payment } = invoice;
+    return this.render(invoice.invoiceNo, invoice.issuedAt, {
+      payment,
+      periodStart: payment.subscription.startsAt ?? invoice.issuedAt,
+      periodEnd: payment.subscription.endsAt ?? invoice.issuedAt,
+    });
+  }
+
+  /** A link to the invoice PDF: signed R2 URL, or our own PDF endpoint. */
+  async downloadUrl(auth: AuthUser, invoiceId: string) {
+    const invoice = await this.find(auth, invoiceId);
+    const url =
+      invoice.pdfKey && this.r2.isConfigured
+        ? await this.r2.getDownloadUrl(invoice.pdfKey)
+        : `/api/invoices/${invoice.id}/pdf`;
+    return { invoiceNo: invoice.invoiceNo, url };
+  }
+
+  /** The PDF bytes, for the /invoices/:id/pdf endpoint. */
+  async pdf(auth: AuthUser, invoiceId: string) {
+    const invoice = await this.find(auth, invoiceId);
+    return { invoiceNo: invoice.invoiceNo, pdf: await this.pdfOf(invoice) };
   }
 
   /** Admin: send the stored PDF again (e.g. if the first email failed). */
   async resend(auth: AuthUser, invoiceId: string, ip: string | null) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      include: { user: { include: { profile: true } } },
-    });
-    if (!invoice?.pdfKey) {
-      throw new AppException(HttpStatus.NOT_FOUND, 'INVOICE_NOT_FOUND');
-    }
-    const pdf = await this.r2.getObject(invoice.pdfKey);
+    const invoice = await this.find(auth, invoiceId);
+    const pdf = await this.pdfOf(invoice);
+    const { user } = invoice.payment;
     const sent = await this.email(
       invoice,
-      { email: invoice.user.email, name: invoice.user.profile?.fullName ?? '' },
+      { email: user.email, name: user.profile?.fullName ?? '' },
       pdf,
     );
     await this.audit.log({

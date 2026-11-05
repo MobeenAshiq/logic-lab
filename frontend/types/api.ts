@@ -444,6 +444,8 @@ export interface StudentBilling {
   plans: PublicPlan[];
   payments: StudentPayment[];
   paymentInstructions: PaymentInstructions;
+  /** False when file storage is not set up: the slip field is hidden. */
+  slipUploads: boolean;
 }
 
 export interface Quote {
@@ -466,7 +468,7 @@ export interface AdminPayment {
   amount: number;
   expectedAmount: number;
   paidAt: string;
-  slipKey: string;
+  slipKey: string | null;
   status: PaymentStatus;
   reviewedBy: string | null;
   reviewedAt: string | null;
@@ -481,7 +483,7 @@ export interface AdminPayment {
 
 export interface AdminPaymentDetail extends AdminPayment {
   ocrText: string | null;
-  slipUrl: string;
+  slipUrl: string | null;
   previousPayments: number;
   emailed?: boolean;
 }

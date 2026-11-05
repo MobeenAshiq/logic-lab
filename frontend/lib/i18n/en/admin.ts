@@ -114,6 +114,8 @@ export const admin = {
     title: (txn: string) => `Payment ${txn}`,
     slip: "Payment slip",
     openSlip: "Open in new tab",
+    noSlip:
+      "No slip attached. Check the transaction ID and amount in your EasyPaisa, JazzCash or bank account before approving.",
     ocrText: "Text read from the slip",
     noOcr: "No text was read (PDF or unreadable image).",
     warningsTitle: "Check carefully",

@@ -519,7 +519,7 @@ describe('Phase 3: free trial, payments and invoices', () => {
       await other.agent.get(`/learn/lessons/${fixtures.lessonA}`).expect(403);
 
       // Same transaction ID is allowed again for the same student after a rejection.
-      const slip4 = await uploadSlip(other.agent);
+      // The slip is optional: this retry sends only the transaction details.
       const retry = await other.agent
         .post('/student/payments')
         .send({
@@ -528,14 +528,33 @@ describe('Phase 3: free trial, payments and invoices', () => {
           transactionId: ocrTxn,
           amount: 3000,
           paidAt: today(),
-          slipKey: slip4,
         })
         .expect(201);
       expect(retry.body.id).toBe(first.body.id);
+      const noSlip = await admin
+        .get(`/admin/payments/${retry.body.id}`)
+        .expect(200);
+      expect(noSlip.body.slipUrl).toBeNull();
+      expect(noSlip.body.warnings[0]).toMatch(/No slip attached/);
 
+      // Without file storage, approval still works and the PDF is rebuilt on download.
+      const offline = jest
+        .spyOn(app.get(R2Service), 'isConfigured', 'get')
+        .mockReturnValue(false);
       const approved = await admin
         .post(`/admin/payments/${retry.body.id}/approve`)
         .expect(200);
+      const newInvoiceId = approved.body.invoice.id as string;
+      const dl = await other.agent
+        .get(`/student/invoices/${newInvoiceId}/download`)
+        .expect(200);
+      expect(dl.body.url).toBe(`/api/invoices/${newInvoiceId}/pdf`);
+      const pdf = await other.agent
+        .get(`/invoices/${newInvoiceId}/pdf`)
+        .expect(200);
+      expect(pdf.headers['content-type']).toBe('application/pdf');
+      await payer.agent.get(`/invoices/${newInvoiceId}/pdf`).expect(404);
+      offline.mockRestore();
       const [, year, n] = /^INV-(\d{4})-(\d{5})$/.exec(invoiceNo)!;
       const next = approved.body.invoice.invoiceNo as string;
       expect(next.startsWith(`INV-${year}-`)).toBe(true);
