@@ -62,6 +62,12 @@ export const admin = {
       unbanned: "User unbanned",
     },
     superAdminOnly: "Only a super admin can change admin accounts.",
+    approve: "Approve",
+    reject: "Reject",
+    approved: "Student approved. They can log in now.",
+    pendingBanner: (n: number) =>
+      n === 1 ? "1 new sign-up is waiting for approval." : `${n} new sign-ups are waiting for approval.`,
+    showPending: "Review",
   },
   audit: {
     title: "Audit log",
@@ -222,6 +228,11 @@ export const admin = {
     },
   },
   settings: {
+    mfaTitle: "Two-factor authentication",
+    mfaBody:
+      "Scan this QR code with an authenticator app to add your admin account to a new phone. Keep it private: anyone with this code and your password can log in.",
+    mfaManual: "Or enter this key:",
+    mfaLoadError: "Could not load your 2FA QR code.",
     title: "Settings",
     subtitle: "Where students send their payments. Changes are audited.",
     paymentTitle: "Payment instructions",

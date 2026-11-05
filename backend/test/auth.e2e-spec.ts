@@ -159,6 +159,18 @@ describe('Phase 1: authentication and roles', () => {
     await again.agent.get('/student/dashboard').expect(200);
   });
 
+  it('an admin with 2FA on can view their QR again; students cannot', async () => {
+    const address = email('qr');
+    await createAdmin(address, Role.admin);
+    const admin = await loginWithMfa(address);
+    const res = await admin.get('/auth/mfa/qr').expect(200);
+    expect(res.body.secret).toEqual(expect.any(String));
+    expect(res.body.qrCodeDataUrl).toMatch(/^data:image\/png;base64,/);
+
+    const { agent: student } = await signupAndVerify(email('qr-student'));
+    await student.get('/auth/mfa/qr').expect(403);
+  });
+
   it('a new user gets a student profile from the database trigger', async () => {
     const { id } = await signupAndVerify(email('trigger'));
     const profile = await prisma.profile.findUniqueOrThrow({ where: { id } });

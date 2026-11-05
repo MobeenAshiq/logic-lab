@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
-import { applyFormErrors } from "@/lib/errors";
+import { applyFormErrors, toastError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import type { PublicUser, Role } from "@/types/api";
 
@@ -123,7 +124,8 @@ export function ChangeRoleDialog({
 export function BanDialog({ user, children }: { user: PublicUser; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-  const banning = user.status === "active";
+  // A pending sign-up is "rejected" by banning it.
+  const banning = user.status !== "banned";
   const schema = z.object({ reason });
   type Values = z.infer<typeof schema>;
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { reason: "" } });
@@ -180,5 +182,28 @@ export function BanDialog({ user, children }: { user: PublicUser; children: Reac
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** One click: pending sign-up -> active student. */
+export function ApproveButton({ user }: { user: PublicUser }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () =>
+      api<PublicUser>(`/admin/users/${user.id}/status`, {
+        method: "PATCH",
+        body: { status: "active", reason: "Sign-up approved" },
+      }),
+    onSuccess: () => {
+      toast.success(s.approved);
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: toastError,
+  });
+  return (
+    <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+      {mutation.isPending ? <Spinner /> : <Check />}
+      {s.approve}
+    </Button>
   );
 }

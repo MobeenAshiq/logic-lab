@@ -8,6 +8,7 @@ import { Controller, useForm, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ErrorState, Field, LoadingRows, PageHeader, Spinner } from "@/components/shared";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { applyFormErrors, toastError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
-import type { PaymentInstructions } from "@/types/api";
+import type { MfaSetup, PaymentInstructions } from "@/types/api";
 
 const s = t.admin.settings;
 const KEY = ["admin", "settings", "payment_instructions"];
@@ -139,6 +140,47 @@ function MethodCard({
   );
 }
 
+/** The admin's active 2FA key, always shown so it can be added to another phone. */
+function TwoFactorCard() {
+  const query = useQuery({
+    queryKey: ["auth", "mfa", "qr"],
+    queryFn: () => api<MfaSetup>("/auth/mfa/qr"),
+    staleTime: Infinity,
+  });
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle>{s.mfaTitle}</CardTitle>
+        <CardDescription>{s.mfaBody}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {query.isError ? (
+          <p className="text-destructive text-sm">{s.mfaLoadError}</p>
+        ) : (
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+            {query.data ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={query.data.qrCodeDataUrl}
+                alt={s.mfaTitle}
+                className="size-44 shrink-0 rounded-lg border bg-white p-2"
+              />
+            ) : (
+              <Skeleton className="size-44 shrink-0" />
+            )}
+            <div className="grid w-full min-w-0 gap-2 text-sm">
+              <p className="text-muted-foreground text-xs">{s.mfaManual}</p>
+              <code className="bg-muted rounded-md px-3 py-2 font-mono text-xs break-all">
+                {query.data?.secret ?? "…"}
+              </code>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
   const [aiLimit, setAiLimit] = useState(30);
@@ -191,6 +233,7 @@ export default function AdminSettingsPage() {
   return (
     <>
       <PageHeader title={s.title} description={s.subtitle} />
+      <TwoFactorCard />
       <Card>
         <CardHeader>
           <CardTitle>{s.paymentTitle}</CardTitle>
