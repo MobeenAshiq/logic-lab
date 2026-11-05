@@ -70,5 +70,5 @@ export const SETTING_DEFAULTS: Settings = {
     live_class_attended: 5,
     plagiarism_confirmed: -50,
   },
-  ai_daily_limit: { studentMessages: 30 },
+  ai_daily_limit: { studentMessages: 10 },
 };

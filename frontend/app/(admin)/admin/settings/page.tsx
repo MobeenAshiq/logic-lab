@@ -183,7 +183,7 @@ function TwoFactorCard() {
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
-  const [aiLimit, setAiLimit] = useState(30);
+  const [aiLimit, setAiLimit] = useState(10);
   const query = useQuery({
     queryKey: KEY,
     queryFn: () => api<PaymentInstructions>("/admin/settings/payment_instructions"),
