@@ -54,7 +54,7 @@ function withCookies(res: NextResponse, setCookies: string[]) {
  * token on the way, then enforces portal roles and 2FA.
  */
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
   const portal = PORTALS.find((p) => pathname === p.prefix || pathname.startsWith(`${p.prefix}/`));
   const isMfaPage = pathname === "/mfa";
   const isAuthPage = pathname === "/login" || pathname === "/signup";
