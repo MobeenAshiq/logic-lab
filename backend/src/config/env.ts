@@ -33,6 +33,11 @@ export const envSchema = z.object({
 
   RESEND_API_KEY: optional,
   EMAIL_FROM: z.string().default('LogicLab <onboarding@resend.dev>'),
+  // SMTP (e.g. Gmail + App Password). Takes precedence over Resend when set.
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().default(465),
+  SMTP_USER: optional,
+  SMTP_PASS: optional,
 
   UPSTASH_REDIS_REST_URL: optional,
   UPSTASH_REDIS_REST_TOKEN: optional,

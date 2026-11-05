@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createTransport, Transporter } from 'nodemailer';
 import { Resend } from 'resend';
 import { Env } from '../config/env';
 import { t } from '../common/i18n/en';
@@ -12,13 +13,26 @@ export interface MailAttachment {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private readonly smtp: Transporter | null;
   private readonly resend: Resend | null;
   private readonly from: string;
   private readonly frontendUrl: string;
 
   constructor(config: ConfigService<Env, true>) {
+    const smtpUser = config.get('SMTP_USER', { infer: true });
+    const smtpPass = config.get('SMTP_PASS', { infer: true });
+    const port = config.get('SMTP_PORT', { infer: true });
+    this.smtp =
+      smtpUser && smtpPass
+        ? createTransport({
+            host: config.get('SMTP_HOST', { infer: true }),
+            port,
+            secure: port === 465,
+            auth: { user: smtpUser, pass: smtpPass },
+          })
+        : null;
     const key = config.get('RESEND_API_KEY', { infer: true });
-    this.resend = key ? new Resend(key) : null;
+    this.resend = !this.smtp && key ? new Resend(key) : null;
     this.from = config.get('EMAIL_FROM', { infer: true });
     this.frontendUrl = config.get('FRONTEND_URL', { infer: true });
   }
@@ -83,6 +97,23 @@ export class MailService {
     text: string,
     attachments: MailAttachment[] = [],
   ): Promise<boolean> {
+    if (this.smtp) {
+      try {
+        await this.smtp.sendMail({
+          from: this.from,
+          to,
+          subject,
+          text,
+          attachments,
+        });
+        return true;
+      } catch (err) {
+        this.logger.error(
+          `SMTP failed for ${to}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return false;
+      }
+    }
     if (!this.resend) {
       const files = attachments.map((a) => a.filename).join(', ');
       this.logger.warn(
