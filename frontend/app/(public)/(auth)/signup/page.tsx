@@ -32,6 +32,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { data: me } = useMe();
   const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState(false);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { fullName: "", email: "", password: "" },
@@ -47,7 +48,7 @@ export default function SignupPage() {
     setError(null);
     try {
       await api("/auth/signup", { method: "POST", body: values });
-      router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+      setCreated(true);
     } catch (err) {
       if (err instanceof ApiError && err.code === "VALIDATION_FAILED") {
         for (const [field, message] of Object.entries(err.fieldErrors)) {
@@ -58,6 +59,16 @@ export default function SignupPage() {
       }
     }
   });
+
+  if (created) {
+    return (
+      <AuthCard title={t.auth.signup.pendingTitle} subtitle={t.auth.signup.pendingBody}>
+        <Button asChild className="h-9">
+          <Link href="/login">{t.auth.signup.backToLogin}</Link>
+        </Button>
+      </AuthCard>
+    );
+  }
 
   return (
     <AuthCard

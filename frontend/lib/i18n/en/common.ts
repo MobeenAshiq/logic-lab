@@ -52,7 +52,7 @@ export const common = {
     admin: "Admin",
     super_admin: "Super admin",
   },
-  userStatus: { active: "Active", banned: "Banned" },
+  userStatus: { active: "Active", banned: "Banned", pending: "Pending approval" },
   levels: { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" },
   lessonTypes: { video: "Video", article: "Article", quiz: "Quiz", assignment: "Assignment" },
   subscriptionStatus: {

@@ -41,7 +41,7 @@ API's httpOnly cookies are first-party. Two backend settings depend on this:
 | Area | Routes |
 |---|---|
 | Public | `/` (landing from the CMS), `/pricing`, `/courses?track=&level=`, `/courses/[slug]` |
-| Auth | `/login`, `/signup`, `/verify-email`, `/forgot-password`, `/reset-password`, `/auth/callback` (Google), `/mfa` |
+| Auth | `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/callback` (Google), `/mfa` |
 | Student | `/student` (trial track picker, continue learning, streak, weekly time, course progress), `/student/billing` (plans, coupon, payment details, slip upload + OCR, history, invoices), `/student/courses/[slug]` (outline with progress and locks), `/student/lessons/[id]` (video player with watermark/speed/resume, article, quiz, assignment with write-only editor, notes, downloads, timestamped Q&A; paywall or locked states), `/student/quizzes/[attemptId]` (server-timed attempt, results) |
 | Mentor | `/mentor` (assigned courses, unanswered questions), `/mentor/lessons/[id]` (video, notes, downloads, Q&A; quiz builder or assignment + rubric editor), `/mentor/courses/[id]/questions` (question bank), `/mentor/grading` (queue, submission grader with typing replay, quiz attempt grader) |
 | Community | `/community` (feed: track/tag filters, sort, search, pinned announcements), `/community/new`, `/community/posts/[id]` (votes, answers, accept, report), `/community/posts/[id]/edit` |

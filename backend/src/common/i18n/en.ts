@@ -14,6 +14,8 @@ export const en = {
     INVALID_CODE: 'The code is incorrect or has expired.',
     INVALID_RESET_TOKEN: 'This reset link is invalid or has expired.',
     ACCOUNT_BANNED: 'Your account has been suspended.',
+    ACCOUNT_PENDING:
+      'Your account is waiting for admin approval. Please try again later.',
     FORBIDDEN_ROLE: 'You do not have access to this page.',
     MFA_SETUP_REQUIRED: 'Set up two-factor authentication to open your portal.',
     MFA_VERIFY_REQUIRED: 'Enter your two-factor authentication code.',
@@ -188,6 +190,8 @@ export const en = {
       'If an account exists for this email, a reset link has been sent.',
     PASSWORD_RESET: 'Your password has been changed. Please log in.',
     LOGGED_OUT: 'You have been logged out.',
+    SIGNUP_PENDING:
+      'Account created. An admin will approve it soon, then you can log in.',
   },
 } as const;
 

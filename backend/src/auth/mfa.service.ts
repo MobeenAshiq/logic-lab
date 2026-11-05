@@ -51,6 +51,24 @@ export class MfaService {
     };
   }
 
+  /** Shows the already-active secret again (only after a full 2FA login). */
+  async currentQr(auth: AuthUser) {
+    requireRole(auth, PRIVILEGED_ROLES);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: auth.id },
+    });
+    if (!user.totpEnabledAt || !user.totpSecret) {
+      throw new AppException(HttpStatus.BAD_REQUEST, 'MFA_NOT_SET_UP');
+    }
+    const secret = decrypt(user.totpSecret, this.encryptionKey);
+    const otpauthUrl = authenticator.keyuri(user.email, 'LogicLab', secret);
+    return {
+      secret,
+      otpauthUrl,
+      qrCodeDataUrl: await toDataURL(otpauthUrl),
+    };
+  }
+
   /** Confirms the first code from the app and turns 2FA on. */
   async enable(auth: AuthUser, code: string, ip: string | null) {
     requireRole(auth, PRIVILEGED_ROLES);

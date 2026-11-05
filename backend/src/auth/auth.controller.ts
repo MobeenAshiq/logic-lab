@@ -22,13 +22,11 @@ import {
   mfaCodeSchema,
   resetPasswordSchema,
   signupSchema,
-  verifyEmailSchema,
 } from './auth.schemas';
 import type {
   LoginInput,
   ResetPasswordInput,
   SignupInput,
-  VerifyEmailInput,
 } from './auth.schemas';
 import { AuthService, LoginResult } from './auth.service';
 import type { AuthUser, GoogleIdentity } from './auth.types';
@@ -72,33 +70,7 @@ export class AuthController {
   @Post('signup')
   async signup(@Body(new ZodValidationPipe(signupSchema)) body: SignupInput) {
     await this.auth.signup(body);
-    return { message: t.messages.CODE_SENT, next: 'verify-email' };
-  }
-
-  @Public()
-  @RateLimit('otp-verify')
-  @HttpCode(HttpStatus.OK)
-  @Post('verify-email')
-  async verifyEmail(
-    @Body(new ZodValidationPipe(verifyEmailSchema)) body: VerifyEmailInput,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.respondWithSession(
-      res,
-      await this.auth.verifyEmail(body, clientMeta(req)),
-    );
-  }
-
-  @Public()
-  @RateLimit('otp-send')
-  @HttpCode(HttpStatus.OK)
-  @Post('resend-code')
-  async resendCode(
-    @Body(new ZodValidationPipe(emailOnlySchema)) body: { email: string },
-  ) {
-    await this.auth.resendVerificationCode(body.email);
-    return { message: t.messages.CODE_SENT };
+    return { message: t.messages.SIGNUP_PENDING };
   }
 
   @Public()
@@ -221,6 +193,12 @@ export class AuthController {
   ) {
     await this.mfa.verify(user, body.code);
     return { mfa: 'none' };
+  }
+
+  /** The active 2FA key as a QR code, so it can be added to another phone. */
+  @Get('mfa/qr')
+  mfaQr(@CurrentUser() user: AuthUser) {
+    return this.mfa.currentQr(user);
   }
 
   private respondWithSession(res: Response, result: LoginResult) {

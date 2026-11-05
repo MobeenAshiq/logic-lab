@@ -1,7 +1,7 @@
 // Response shapes of the LogicLab API (backend/). Dates arrive as ISO strings.
 
 export type Role = "student" | "mentor" | "admin" | "super_admin";
-export type UserStatus = "active" | "banned";
+export type UserStatus = "active" | "banned" | "pending";
 export type MfaState = "none" | "setup" | "verify";
 
 export interface ApiErrorBody {

@@ -13,7 +13,6 @@ export const auth = {
     forgot: "Forgot password?",
     noAccount: "New to Logic Lab?",
     createAccount: "Create an account",
-    resendCode: "Verify my email",
   },
   signup: {
     title: "Create your account",
@@ -21,15 +20,10 @@ export const auth = {
     submit: "Create account",
     haveAccount: "Already have an account?",
     login: "Log in",
-  },
-  verify: {
-    title: "Check your email",
-    subtitle: (email: string) => `We sent a 6-digit code to ${email}.`,
-    submit: "Verify email",
-    resend: "Send a new code",
-    resent: "A new code is on its way.",
-    wrongEmail: "Wrong email?",
-    emailLabel: "Email address",
+    pendingTitle: "Account created",
+    pendingBody:
+      "Your account is waiting for admin approval. You can log in as soon as an admin approves it.",
+    backToLogin: "Go to login",
   },
   forgot: {
     title: "Reset your password",
@@ -64,6 +58,7 @@ export const auth = {
     SESSION_REVOKED_DEVICE_LIMIT:
       "You were signed out because your account was used on another device.",
     ACCOUNT_BANNED: "Your account has been suspended.",
+    ACCOUNT_PENDING: "Your account is waiting for admin approval. Please try again later.",
     UNAUTHENTICATED: "Please log in to continue.",
     GOOGLE_EMAIL_NOT_VERIFIED: "Your Google email address is not verified.",
     GOOGLE_NOT_CONFIGURED: "Google login is not available right now.",

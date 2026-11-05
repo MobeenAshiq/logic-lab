@@ -5,7 +5,7 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import { authenticator } from 'otplib';
 import { hash } from 'bcryptjs';
@@ -51,19 +51,26 @@ describe('Phase 1: authentication and roles', () => {
 
   const agent = () => request.agent(app.getHttpServer());
 
+  /** Signs up, has an admin approve the account, then logs in. */
   async function signupAndVerify(address: string) {
-    const a = agent();
-    await a
+    await agent()
       .post('/auth/signup')
       .send({ email: address, password: PASSWORD, fullName: 'Test User' })
       .expect(201);
-    await a
-      .post('/auth/verify-email')
-      .send({ email: address, code: mail.codes.get(address) })
-      .expect(200);
     const user = await prisma.user.findUniqueOrThrow({
       where: { email: address },
     });
+    await prisma.asAdmin(Role.super_admin, (tx) =>
+      tx.profile.update({
+        where: { id: user.id },
+        data: { status: UserStatus.active },
+      }),
+    );
+    const a = agent();
+    await a
+      .post('/auth/login')
+      .send({ email: address, password: PASSWORD })
+      .expect(200);
     return { agent: a, id: user.id };
   }
 
@@ -124,8 +131,8 @@ describe('Phase 1: authentication and roles', () => {
     await app.close();
   });
 
-  it('email signup works, and an unverified email cannot log in', async () => {
-    const address = email('unverified');
+  it('signup needs admin approval before the student can log in', async () => {
+    const address = email('pending');
     await agent()
       .post('/auth/signup')
       .send({ email: address, password: PASSWORD, fullName: 'Ali' })
@@ -133,24 +140,35 @@ describe('Phase 1: authentication and roles', () => {
 
     const { res } = await login(address);
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('EMAIL_NOT_VERIFIED');
+    expect(res.body.code).toBe('ACCOUNT_PENDING');
 
-    await agent()
-      .post('/auth/verify-email')
-      .send({ email: address, code: '000000' })
-      .expect(400);
-
-    const a = agent();
-    const verified = await a
-      .post('/auth/verify-email')
-      .send({ email: address, code: mail.codes.get(address) })
+    const superAddress = email('approver');
+    await createAdmin(superAddress, Role.super_admin);
+    const admin = await loginWithMfa(superAddress);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: address },
+    });
+    await admin
+      .patch(`/admin/users/${user.id}/status`)
+      .send({ status: 'active', reason: 'Approved' })
       .expect(200);
-    expect(verified.body.user.role).toBe('student');
-    expect(verified.body.mfa).toBe('none');
-    await a.get('/student/dashboard').expect(200);
 
     const again = await login(address);
     expect(again.res.status).toBe(200);
+    expect(again.res.body.user.role).toBe('student');
+    await again.agent.get('/student/dashboard').expect(200);
+  });
+
+  it('an admin with 2FA on can view their QR again; students cannot', async () => {
+    const address = email('qr');
+    await createAdmin(address, Role.admin);
+    const admin = await loginWithMfa(address);
+    const res = await admin.get('/auth/mfa/qr').expect(200);
+    expect(res.body.secret).toEqual(expect.any(String));
+    expect(res.body.qrCodeDataUrl).toMatch(/^data:image\/png;base64,/);
+
+    const { agent: student } = await signupAndVerify(email('qr-student'));
+    await student.get('/auth/mfa/qr').expect(403);
   });
 
   it('a new user gets a student profile from the database trigger', async () => {
@@ -225,7 +243,7 @@ describe('Phase 1: authentication and roles', () => {
 
   it('a third device login signs out the oldest session', async () => {
     const address = email('devices');
-    await signupAndVerify(address); // device 1 (from verify-email)
+    await signupAndVerify(address); // device 1
 
     const d2 = await login(address, 'device-2');
     const d3 = await login(address, 'device-3');

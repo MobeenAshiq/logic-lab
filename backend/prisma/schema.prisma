@@ -21,6 +21,8 @@ enum Role {
 enum UserStatus {
   active
   banned
+  /// Signed up, waiting for an admin to approve the account.
+  pending
 }
 
 enum AuthTokenPurpose {

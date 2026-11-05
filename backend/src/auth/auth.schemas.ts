@@ -27,11 +27,6 @@ export const loginSchema = z.strictObject({
   password: z.string().min(1).max(72),
 });
 
-export const verifyEmailSchema = z.strictObject({
-  email: emailSchema,
-  code: otpSchema,
-});
-
 export const emailOnlySchema = z.strictObject({ email: emailSchema });
 
 export const resetPasswordSchema = z.strictObject({
@@ -43,5 +38,4 @@ export const mfaCodeSchema = z.strictObject({ code: otpSchema });
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
-export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

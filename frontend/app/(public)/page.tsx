@@ -95,7 +95,14 @@ export default async function LandingPage() {
             </span>
 
             <h1 className="font-heading text-foreground mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[56px] lg:leading-[1.12]">
-              {hero.title || t.site.hero.headline}
+              {hero.title ? (
+                hero.title
+              ) : (
+                <>
+                  Logic Building, Web Dev &amp; AI{" "}
+                  <span className="text-emerald-600 dark:text-emerald-400">Dashboard</span>
+                </>
+              )}
             </h1>
 
             <p className="text-muted-foreground mt-5 max-w-xl text-base leading-relaxed sm:text-lg lg:mx-0">
@@ -178,7 +185,7 @@ export default async function LandingPage() {
                     <span className="text-muted-foreground text-xs font-medium">Lesson 4 of 12</span>
                   </div>
                   <h5 className="font-heading text-foreground mt-2 text-sm font-bold">
-                    Problem Solving & Flowcharts
+                    Problem Solving &amp; Flowcharts
                   </h5>
                   <div className="mt-3 flex items-center justify-between text-xs font-semibold">
                     <span className="text-muted-foreground font-normal">Progress</span>
@@ -203,7 +210,7 @@ export default async function LandingPage() {
                     </span>
                     <div>
                       <p className="font-heading text-foreground text-xs font-bold">
-                        Live Q&A Office Hours
+                        Live Q&amp;A Office Hours
                       </p>
                       <p className="text-muted-foreground text-[11px]">Today at 7:00 PM PKT</p>
                     </div>
@@ -223,6 +230,37 @@ export default async function LandingPage() {
               </div>
             </Link>
           </div>
+        </div>
+
+        {/* Geometric faceted polygon accents matching the screenshot */}
+        <div className="pointer-events-none absolute -right-4 -bottom-8 -z-10 w-96 overflow-hidden opacity-90 hidden xl:block">
+          <svg
+            viewBox="0 0 400 400"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-full w-full"
+            aria-hidden="true"
+          >
+            <path
+              d="M400 100L260 240L400 380V100Z"
+              fill="#0F172A"
+              fillOpacity="0.05"
+            />
+            <path
+              d="M400 220L310 310L400 400V220Z"
+              fill="#0F172A"
+              fillOpacity="0.1"
+            />
+            <path
+              d="M400 280L340 340L400 400V280Z"
+              fill="#10B981"
+              fillOpacity="0.8"
+            />
+            <path
+              d="M400 350L370 380L400 400V350Z"
+              fill="#34D399"
+            />
+          </svg>
         </div>
       </section>
 

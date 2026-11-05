@@ -1,10 +1,10 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Ban, Search, ShieldCheck, UserCog } from "lucide-react";
+import { Ban, Search, ShieldCheck, UserCog, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useDebounced } from "@/components/admin/use-debounced";
-import { BanDialog, ChangeRoleDialog } from "@/components/admin/user-dialogs";
+import { ApproveButton, BanDialog, ChangeRoleDialog } from "@/components/admin/user-dialogs";
 import {
   EmptyState,
   ErrorState,
@@ -40,7 +40,9 @@ const s = t.admin.users;
 const PAGE_SIZE = 20;
 const ALL = "all";
 const ROLES: Role[] = ["student", "mentor", "admin", "super_admin"];
-const STATUSES: UserStatus[] = ["active", "banned"];
+const STATUSES: UserStatus[] = ["pending", "active", "banned"];
+
+const statusTone = { active: "success", banned: "danger", pending: "warning" } as const;
 
 const roleTone = {
   student: "neutral",
@@ -61,6 +63,18 @@ function UserActions({
     return <span className="text-muted-foreground text-xs">{s.you}</span>;
   }
   const isSuper = me.role === "super_admin";
+  if (user.status === "pending") {
+    return (
+      <div className="flex justify-end gap-1">
+        <ApproveButton user={user} />
+        <BanDialog user={user}>
+          <Button variant="ghost" size="sm" className="text-destructive">
+            <Ban /> {s.reject}
+          </Button>
+        </BanDialog>
+      </div>
+    );
+  }
   if (isAdmin(user.role) && !isSuper) {
     return (
       <Tooltip>
@@ -113,6 +127,12 @@ export default function AdminUsersPage() {
     queryFn: () => api<Paginated<PublicUser>>("/admin/users", { query: params }),
     placeholderData: keepPreviousData,
   });
+  const pendingQuery = useQuery({
+    queryKey: ["admin", "users", "pending-count"],
+    queryFn: () =>
+      api<Paginated<PublicUser>>("/admin/users", { query: { status: "pending", pageSize: 1 } }),
+  });
+  const pendingCount = pendingQuery.data?.total ?? 0;
 
   const resetPage =
     <T,>(set: (v: T) => void) =>
@@ -124,6 +144,17 @@ export default function AdminUsersPage() {
   return (
     <>
       <PageHeader title={s.title} description={s.subtitle} />
+
+      {pendingCount > 0 && status !== "pending" && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <span className="flex items-center gap-2 font-medium">
+            <UserPlus className="size-4" /> {s.pendingBanner(pendingCount)}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => resetPage(setStatus)("pending")}>
+            {s.showPending}
+          </Button>
+        </div>
+      )}
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
         <div className="relative">
@@ -196,7 +227,7 @@ export default function AdminUsersPage() {
                       <StatusBadge tone={roleTone[u.role]}>{t.common.roles[u.role]}</StatusBadge>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge tone={u.status === "active" ? "success" : "danger"}>
+                      <StatusBadge tone={statusTone[u.status]}>
                         {t.common.userStatus[u.status]}
                       </StatusBadge>
                     </TableCell>
@@ -223,7 +254,7 @@ export default function AdminUsersPage() {
                 <p className="text-muted-foreground truncate text-xs">{u.email}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <StatusBadge tone={roleTone[u.role]}>{t.common.roles[u.role]}</StatusBadge>
-                  <StatusBadge tone={u.status === "active" ? "success" : "danger"}>
+                  <StatusBadge tone={statusTone[u.status]}>
                     {t.common.userStatus[u.status]}
                   </StatusBadge>
                   <StatusBadge>{u.emailVerified ? s.verified : s.unverified}</StatusBadge>

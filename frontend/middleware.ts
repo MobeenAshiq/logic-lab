@@ -17,8 +17,12 @@ function home(role: Role) {
   return "/student";
 }
 
-function fetchMe(cookie: string) {
-  return fetch(`${API_URL}/me`, { headers: { cookie }, cache: "no-store" });
+async function fetchMe(cookie: string) {
+  try {
+    return await fetch(`${API_URL}/me`, { headers: { cookie }, cache: "no-store" });
+  } catch {
+    return new Response(null, { status: 503 });
+  }
 }
 
 /** Applies Set-Cookie headers to a Cookie header, so a retried request uses the new tokens. */
@@ -58,10 +62,15 @@ export async function middleware(req: NextRequest) {
 
   const redirect = (path: string, setCookies: string[] = []) =>
     withCookies(NextResponse.redirect(new URL(path, req.url)), setCookies);
+
   const toLogin = (reason?: string, setCookies: string[] = []) => {
-    const params = new URLSearchParams({ next: pathname + search });
+    if (isAuthPage) return withCookies(NextResponse.next(), setCookies);
+    const cleanPath = pathname.startsWith("/login") || pathname.startsWith("/signup") ? "/" : pathname;
+    const params = new URLSearchParams();
+    if (cleanPath !== "/") params.set("next", cleanPath);
     if (reason) params.set("reason", reason);
-    return redirect(`/login?${params.toString()}`, setCookies);
+    const qs = params.toString();
+    return redirect(`/login${qs ? `?${qs}` : ""}`, setCookies);
   };
 
   if (!req.cookies.has("ll_access") && !req.cookies.has("ll_refresh")) {
@@ -74,15 +83,19 @@ export async function middleware(req: NextRequest) {
   let res = await fetchMe(cookie);
 
   if (res.status === 401 && req.cookies.has("ll_refresh")) {
-    const refreshed = await fetch(`${API_URL}/auth/refresh`, {
-      method: "POST",
-      headers: { cookie },
-      cache: "no-store",
-    });
-    setCookies = refreshed.headers.getSetCookie();
-    if (refreshed.ok) {
-      cookie = mergeCookies(cookie, setCookies);
-      res = await fetchMe(cookie);
+    try {
+      const refreshed = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { cookie },
+        cache: "no-store",
+      });
+      setCookies = refreshed.headers.getSetCookie();
+      if (refreshed.ok) {
+        cookie = mergeCookies(cookie, setCookies);
+        res = await fetchMe(cookie);
+      }
+    } catch {
+      // Backend unavailable
     }
   }
 
@@ -96,7 +109,8 @@ export async function middleware(req: NextRequest) {
 
   if (isAuthPage) {
     const next = req.nextUrl.searchParams.get("next");
-    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+    const isNextAuth = !next || next.startsWith("/login") || next.startsWith("/signup");
+    const safeNext = !isNextAuth && next.startsWith("/") && !next.startsWith("//") ? next : null;
     const target = safeNext || home(user.role);
     return redirect(target, setCookies);
   }

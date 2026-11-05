@@ -11,7 +11,7 @@ import { AuthCard, FormAlert, GoogleButton, reasonMessage } from "@/components/a
 import { Field, Spinner } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, ApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { afterLoginPath, ME_KEY, useMe } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { t } from "@/lib/i18n";
@@ -31,7 +31,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(
     reasonMessage(params.get("reason") ?? params.get("error")),
   );
-  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
@@ -45,25 +44,14 @@ function LoginForm() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
-    setUnverifiedEmail(null);
     try {
       const session = await api<SessionResponse>("/auth/login", { method: "POST", body: values });
       queryClient.setQueryData(ME_KEY, session);
       router.replace(afterLoginPath(session.user.role, session.mfa, params.get("next")));
     } catch (err) {
-      if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED")
-        setUnverifiedEmail(values.email);
       setError(errorMessage(err));
     }
   });
-
-  const verifyNow = async () => {
-    if (!unverifiedEmail) return;
-    await api("/auth/resend-code", { method: "POST", body: { email: unverifiedEmail } }).catch(
-      () => {},
-    );
-    router.push(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`);
-  };
 
   return (
     <AuthCard
@@ -81,11 +69,6 @@ function LoginForm() {
       <GoogleButton />
       <form onSubmit={onSubmit} className="grid gap-4" noValidate>
         <FormAlert message={error} />
-        {unverifiedEmail && (
-          <Button type="button" variant="outline" onClick={verifyNow}>
-            {t.auth.login.resendCode}
-          </Button>
-        )}
         <Field label={t.auth.email} htmlFor="email" error={form.formState.errors.email?.message}>
           <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
         </Field>
