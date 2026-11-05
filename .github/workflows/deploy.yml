@@ -1,0 +1,115 @@
+# Deploys to the live EC2 server when VERSION changes on main (or from the Actions tab).
+# Bump VERSION (e.g. 1.0.0 -> 1.0.1), commit, push to main: GitHub backs up the DB,
+# uploads the code, builds, migrates, restarts and checks the site, then tags v<VERSION>.
+#
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   AWS_DEPLOY_ROLE_ARN  role created by scripts/setup-github-deploy-role.sh
+#   SSH_PRIVATE_KEY      contents of ~/.ssh/logiclab-key.pem
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # AWS sign-in without stored AWS keys (OIDC)
+  contents: write # push the v<VERSION> tag
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-2
+  SECURITY_GROUP_ID: sg-0d7e21f6db8ce8248
+  HOST: ubuntu@3.24.111.77
+  SITE: https://3-24-111-77.sslip.io
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The server only accepts SSH from known IPs: let this runner in for the deploy.
+      - name: Open SSH for this runner
+        id: ip
+        run: |
+          ip=$(curl -fsS https://checkip.amazonaws.com)
+          echo "ip=$ip" >> "$GITHUB_OUTPUT"
+          aws ec2 authorize-security-group-ingress --group-id "$SECURITY_GROUP_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$ip/32,Description=github-actions-deploy}]"
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.pem
+          chmod 600 ~/.ssh/deploy.pem
+          ssh-keyscan -T 20 -H "${HOST#*@}" >> ~/.ssh/known_hosts
+
+      - name: Back up the database
+        run: ssh -i ~/.ssh/deploy.pem "$HOST" "sudo /usr/local/bin/logiclab-backup"
+
+      - name: Upload code
+        run: |
+          rsync -az --delete -e "ssh -i $HOME/.ssh/deploy.pem" \
+            --exclude node_modules --exclude .next --exclude dist --exclude '.env*' \
+            --exclude .git --exclude .github --exclude '*.tsbuildinfo' --exclude '*.pdf' --exclude /.claude \
+            ./ "$HOST:~/logic-lab/"
+
+      - name: Build, migrate and restart
+        run: |
+          ssh -i ~/.ssh/deploy.pem "$HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export CI=true NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=1536
+          echo "• backend"
+          cd ~/logic-lab/backend
+          pnpm install --frozen-lockfile --reporter=silent
+          pnpm db:generate >/dev/null
+          pnpm build >/dev/null
+          pnpm db:deploy 2>&1 | tail -1
+          pm2 restart api --update-env >/dev/null
+          echo "• frontend"
+          cd ~/logic-lab/frontend
+          pnpm install --frozen-lockfile --reporter=silent
+          pnpm build --no-lint 2>&1 | tail -3
+          pm2 restart web --update-env >/dev/null
+          pm2 save >/dev/null
+          REMOTE
+
+      - name: Check the live site
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE/") || true
+            [ "$code" = 200 ] && { echo "Site is up (HTTP 200)"; exit 0; }
+            sleep 5
+          done
+          echo "Site returned HTTP $code" >&2; exit 1
+
+      - name: Tag the release
+        if: github.event_name == 'push'
+        run: |
+          tag="v${{ steps.version.outputs.value }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists"
+          else
+            git tag "$tag" && git push origin "$tag"
+          fi
+
+      - name: Close SSH again
+        if: always() && steps.ip.outputs.ip != ''
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id "$SECURITY_GROUP_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=${{ steps.ip.outputs.ip }}/32}]"
