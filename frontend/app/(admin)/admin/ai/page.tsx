@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { AutonomousTab } from "@/components/admin/ai/autonomous-tab";
 import { InspectorTab } from "@/components/admin/ai/inspector-tab";
 import { OVERVIEW_KEY, OverviewTab } from "@/components/admin/ai/overview-tab";
 import { PromptTab } from "@/components/admin/ai/prompt-tab";
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api/client";
 import type { AiOverview } from "@/lib/ai-mentor";
 
-type Tab = "overview" | "inspector" | "safety" | "providers" | "prompt";
+type Tab = "overview" | "autonomous" | "inspector" | "safety" | "providers" | "prompt";
 
 export default function AdminAiPage() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -35,6 +36,7 @@ export default function AdminAiPage() {
         <div className="-mx-4 mb-4 overflow-x-auto px-4">
           <TabsList>
             <TabsTrigger value="overview">Usage</TabsTrigger>
+            <TabsTrigger value="autonomous">Autonomous Publisher</TabsTrigger>
             <TabsTrigger value="inspector">Chat inspector</TabsTrigger>
             <TabsTrigger value="safety">
               Safety log{openFlags > 0 && <span className="ml-1.5 rounded-full bg-warning/20 px-1.5 text-[11px] font-semibold">{openFlags}</span>}
@@ -44,6 +46,7 @@ export default function AdminAiPage() {
           </TabsList>
         </div>
         <TabsContent value="overview"><OverviewTab /></TabsContent>
+        <TabsContent value="autonomous"><AutonomousTab /></TabsContent>
         <TabsContent value="inspector"><InspectorTab openSessionId={sessionId} onOpenSession={setSessionId} /></TabsContent>
         <TabsContent value="safety">
           <SafetyTab

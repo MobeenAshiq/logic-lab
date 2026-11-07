@@ -15,6 +15,7 @@ import {
   Receipt,
   Settings,
   ShieldAlert,
+  Sparkles,
   Tags,
   Trophy,
   Users,
@@ -36,6 +37,7 @@ export const NAV: Record<Portal, NavItem[]> = {
   student: [
     { href: "/student", label: t.common.nav.dashboard, icon: LayoutDashboard, exact: true },
     { href: "/student/courses", label: t.common.nav.courses, icon: BookOpen },
+    { href: "/student/daily", label: "Daily Lesson", icon: Sparkles },
     { href: "/student/mentor", label: "AI Mentor", icon: Bot },
     { href: "/student/live", label: t.live.nav, icon: Video },
     { href: "/student/challenges", label: "Daily challenges", icon: Code2 },

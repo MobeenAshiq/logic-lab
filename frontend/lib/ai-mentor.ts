@@ -159,3 +159,126 @@ export interface AiMentorConfig {
   dailyCaps: Record<AiProvider, number>;
   blockedPhrases: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Autonomous AI Mentor & Content Publisher Types
+// ---------------------------------------------------------------------------
+
+export interface AutonomousContentStats {
+  publishedCount: number;
+  draftCount: number;
+  totalArticles: number;
+  submissionsCount: number;
+  averageScore: number;
+  activeStudentsLast7Days: number;
+  config: {
+    enabled: boolean;
+    autoPublish: boolean;
+    defaultStack: string;
+    dailyCronHourUtc: number;
+  };
+}
+
+export interface AutonomousArticleSummary {
+  id: string;
+  dayIndex: number;
+  title: string;
+  status: "draft" | "published";
+  publishedDate: string;
+  moduleName: string;
+  targetStack: string;
+  weekNumber: number;
+  quizQuestionsCount: number;
+  assignmentSubmissionsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuizQuestionItem {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface AutonomousArticleDetail {
+  id: string;
+  dayIndex: number;
+  title: string;
+  markdownContent: string;
+  status: "draft" | "published";
+  publishedDate: string;
+  createdAt: string;
+  updatedAt: string;
+  module: {
+    id: string;
+    moduleName: string;
+    targetStack: string;
+    weekNumber: number;
+    dayNumber: number;
+  };
+  quiz: {
+    id: string;
+    questionsJson: QuizQuestionItem[];
+    autoGradeKey: Record<string, number>;
+  } | null;
+  assignment: {
+    id: string;
+    promptInstructions: string;
+    starterCode: string;
+    testCases: Array<{ input: unknown; expected: unknown; description: string }>;
+    submissions: Array<{
+      id: string;
+      submittedCode: string;
+      aiFeedback: string;
+      score: number;
+      status: "submitted" | "graded" | "needs_revision";
+      createdAt: string;
+      student: { id: string; email: string; profile: { fullName: string } | null };
+    }>;
+  } | null;
+}
+
+export interface StudentDailyArticle {
+  id: string;
+  dayIndex: number;
+  title: string;
+  markdownContent: string;
+  publishedDate: string;
+  module: {
+    moduleName: string;
+    targetStack: string;
+    weekNumber: number;
+  };
+  quiz: {
+    id: string;
+    questions: Array<{ index: number; question: string; options: string[] }>;
+    totalQuestions: number;
+  } | null;
+  assignment: {
+    id: string;
+    promptInstructions: string;
+    starterCode: string;
+    testCases: Array<{ input: unknown; expected: unknown; description: string }>;
+    submission: {
+      id: string;
+      submittedCode: string;
+      aiFeedback: string;
+      score: number;
+      status: "submitted" | "graded" | "needs_revision";
+      createdAt: string;
+    } | null;
+  } | null;
+}
+
+export interface StudentArticleListItem {
+  id: string;
+  dayIndex: number;
+  title: string;
+  moduleName: string;
+  weekNumber: number;
+  hasQuiz: boolean;
+  hasAssignment: boolean;
+  submissionStatus: "submitted" | "graded" | "needs_revision" | null;
+  submissionScore: number | null;
+}

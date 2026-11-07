@@ -132,6 +132,10 @@ export const en = {
     CHALLENGE_TESTS_INVALID: 'This challenge is not configured correctly.',
     CHALLENGE_TEST_COUNT_MISMATCH:
       'The visible test list does not match the challenge.',
+    DAILY_ARTICLE_NOT_FOUND: 'Daily article not found.',
+    DAILY_ARTICLE_EXISTS: 'Daily article for this day already exists.',
+    DAILY_QUIZ_NOT_FOUND: 'Daily quiz not found.',
+    DAILY_ASSIGNMENT_NOT_FOUND: 'Daily assignment not found.',
   },
   email: {
     verifySubject: 'Your LogicLab verification code',
