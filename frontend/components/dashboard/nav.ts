@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bot,
   ClipboardCheck,
   Code2,
   Clock,
@@ -35,6 +36,7 @@ export const NAV: Record<Portal, NavItem[]> = {
   student: [
     { href: "/student", label: t.common.nav.dashboard, icon: LayoutDashboard, exact: true },
     { href: "/student/courses", label: t.common.nav.courses, icon: BookOpen },
+    { href: "/student/mentor", label: "AI Mentor", icon: Bot },
     { href: "/student/live", label: t.live.nav, icon: Video },
     { href: "/student/challenges", label: "Daily challenges", icon: Code2 },
     { href: "/student/notebook", label: "Python notebook", icon: BookOpen },
@@ -61,6 +63,7 @@ export const NAV: Record<Portal, NavItem[]> = {
     { href: "/mentor/live", label: t.live.nav, icon: Video },
     { href: "/admin/grading", label: t.grading.nav, icon: ClipboardCheck },
     { href: "/admin/moderation", label: t.moderation.nav, icon: ShieldAlert },
+    { href: "/admin/ai", label: "AI Mentor", icon: Bot },
     { href: "/community", label: t.community.nav, icon: MessagesSquare },
     { href: "/leaderboard", label: t.realtime.leaderboard.nav, icon: Trophy },
     { href: "/admin/payments", label: t.common.nav.payments, icon: Receipt },

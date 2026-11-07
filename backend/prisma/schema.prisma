@@ -70,6 +70,8 @@ model User {
   mentoredLiveSessions LiveSession[]        @relation("LiveSessionMentor")
   attendance        Attendance[]
   aiUsage           AiUsage[]
+  aiSessions        AiSession[]
+  aiSecurityFlags   SecurityFlagLog[]       @relation("FlaggedUser")
   challengeSubmissions ChallengeSubmission[]
 
   @@map("users")
@@ -208,6 +210,8 @@ model Course {
   liveSessions  LiveSession[]
 
   @@index([trackId, position])
+  aiSessions    AiSession[]
+
   @@map("courses")
 }
 
@@ -229,6 +233,8 @@ model Module {
   lessons           Lesson[]
 
   @@index([courseId, position])
+  aiSessions        AiSession[]
+
   @@map("modules")
 }
 
@@ -1211,4 +1217,114 @@ model Attendance {
   @@unique([sessionId, userId])
   @@index([userId, joinedAt])
   @@map("attendance")
+}
+
+// --- AI Mentor (chat sessions, safety log, provider keys and usage) ---
+
+enum AiSender {
+  user
+  assistant
+}
+
+enum AiFlagStatus {
+  none
+  /// Stopped by the local guardrail before reaching a provider.
+  blocked
+  /// The model refused it as off-topic or unsafe.
+  refused
+}
+
+model AiSession {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  courseId      String?  @map("course_id") @db.Uuid
+  moduleId      String?  @map("module_id") @db.Uuid
+  /// nodejs | python | php | nextjs | cpp | general
+  stackType     String   @default("general") @map("stack_type")
+  title         String   @default("New chat")
+  lastMessageAt DateTime @default(now()) @map("last_message_at") @db.Timestamptz
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course?           @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  module   Module?           @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  messages AiChatLog[]
+  flags    SecurityFlagLog[]
+
+  @@index([userId, lastMessageAt])
+  @@index([lastMessageAt])
+  @@map("ai_sessions")
+}
+
+model AiChatLog {
+  id         String       @id @default(uuid()) @db.Uuid
+  sessionId  String       @map("session_id") @db.Uuid
+  senderType AiSender     @map("sender_type")
+  content    String
+  tokensUsed Int          @default(0) @map("tokens_used")
+  provider   String?
+  model      String?
+  flagStatus AiFlagStatus @default(none) @map("flag_status")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([flagStatus, createdAt])
+  @@map("ai_chat_logs")
+}
+
+model SecurityFlagLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  sessionId  String?   @map("session_id") @db.Uuid
+  promptText String    @map("prompt_text")
+  /// prompt_injection | harmful | off_topic
+  category   String
+  reason     String
+  /// local (pattern filter) or model (provider refusal)
+  source     String
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz
+  reviewedBy String?   @map("reviewed_by") @db.Uuid
+  timestamp  DateTime  @default(now()) @db.Timestamptz
+
+  user    User       @relation("FlaggedUser", fields: [userId], references: [id], onDelete: Cascade)
+  session AiSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([reviewedAt])
+  @@index([userId])
+  @@map("security_flag_logs")
+}
+
+/// Admin-managed provider API keys, AES-GCM encrypted with ENCRYPTION_KEY. Override env keys.
+model AiProviderKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  provider     String   @unique
+  encryptedKey String   @map("encrypted_key")
+  last4        String
+  updatedBy    String?  @map("updated_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("ai_provider_keys")
+}
+
+/// Calls per provider per UTC day, for staying inside free-tier quotas.
+model AiProviderUsage {
+  id          String   @id @default(uuid()) @db.Uuid
+  provider    String
+  day         DateTime @db.Date
+  requests    Int      @default(0)
+  failures    Int      @default(0)
+  rateLimited Int      @default(0) @map("rate_limited")
+  tokensIn    Int      @default(0) @map("tokens_in")
+  tokensOut   Int      @default(0) @map("tokens_out")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([provider, day])
+  @@index([day])
+  @@map("ai_provider_usage")
 }

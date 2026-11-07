@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
+import { AiCoreModule } from './ai/ai-core.module';
+import { AiMentorModule } from './ai-mentor/ai-mentor.module';
 import { AssessmentsModule } from './assessments/assessments.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
@@ -34,6 +36,7 @@ import { UsersModule } from './users/users.module';
     RateLimitModule,
     StorageModule,
     SettingsModule,
+    AiCoreModule,
     RealtimeModule,
     NotificationsModule,
     PointsModule,
@@ -43,6 +46,7 @@ import { UsersModule } from './users/users.module';
     BillingModule,
     LearningModule,
     AssessmentsModule,
+    AiMentorModule,
     CommunityModule,
     ChatModule,
     ChallengeModule,

@@ -1,22 +1,16 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AttemptStatus, LessonType, Prisma, Role, SubmissionStatus } from '@prisma/client';
-import { randomUUID } from 'node:crypto';
-import { ADMIN_ROLES, type AuthUser } from '../auth/auth.types';
-import { askAI, type AiMessage } from '../lib/ai';
+import { AiQuotaService } from '../ai/ai-quota.service';
+import { AiRouterService } from '../ai/ai-router.service';
+import { lessonText, similarity } from '../ai/ai-text';
+import type { AuthUser } from '../auth/auth.types';
+import type { AiMessage } from '../lib/ai';
 import { AppException } from '../common/app-exception';
 import { LessonAccessService } from '../learning/lesson-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StaffAccessService } from './staff-access.service';
 
-/** AI requests per student or mentor per UTC day (admins are unlimited). */
-const DEFAULT_LIMIT = 10;
 const MAX_CONTEXT = 12_000;
-
-function lessonText(value: unknown): string {
-  if (!value || typeof value !== 'object') return '';
-  const node = value as { text?: unknown; content?: unknown };
-  return `${typeof node.text === 'string' ? node.text : ''} ${Array.isArray(node.content) ? node.content.map(lessonText).join(' ') : ''}`.trim();
-}
 
 function parseJson<T>(text: string): T {
   const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -27,19 +21,6 @@ function safeText(value: unknown, fallback = ''): string {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
 }
 
-function tokens(text: string) {
-  return new Set(text.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
-}
-
-function similarity(a: string, b: string) {
-  const left = tokens(a);
-  const right = tokens(b);
-  if (left.size === 0 || right.size === 0) return 0;
-  let overlap = 0;
-  for (const token of left) if (right.has(token)) overlap++;
-  return overlap / (left.size + right.size - overlap);
-}
-
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -48,62 +29,17 @@ export class AiService {
     private readonly prisma: PrismaService,
     private readonly lessonAccess: LessonAccessService,
     private readonly staff: StaffAccessService,
+    private readonly quota: AiQuotaService,
+    private readonly router: AiRouterService,
   ) {}
 
-  private async dailyLimit() {
-    const row = await this.prisma.setting.findUnique({ where: { key: 'ai_daily_limit' } });
-    const configured = (row?.data as { studentMessages?: unknown } | undefined)?.studentMessages;
-    return typeof configured === 'number' && Number.isInteger(configured) && configured >= 0
-      ? configured
-      : DEFAULT_LIMIT;
-  }
-
-  private utcDay() {
-    const now = new Date();
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  }
-
-  private async reserveStudentMessage(userId: string) {
-    const limit = await this.dailyLimit();
-    const day = this.utcDay();
-    if (limit === 0) {
-      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, 'AI_DAILY_LIMIT_REACHED', {
-        limit,
-        remaining: 0,
-      });
-    }
-    const changed = await this.prisma.$queryRaw<{ count: number }[]>`
-      INSERT INTO ai_usage (id, user_id, day, count, created_at, updated_at)
-      VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${day}::date, 1, now(), now())
-      ON CONFLICT (user_id, day) DO UPDATE
-        SET count = ai_usage.count + 1, updated_at = now()
-        WHERE ai_usage.count < ${limit}
-      RETURNING count
-    `;
-    if (!changed.length) {
-      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, 'AI_DAILY_LIMIT_REACHED', {
-        limit,
-        remaining: 0,
-      });
-    }
-    return { limit, used: changed[0].count, remaining: Math.max(0, limit - changed[0].count) };
-  }
-
   /** Counts one AI request against the daily limit; admins are not limited. */
-  private async reserveFor(auth: AuthUser) {
-    if (ADMIN_ROLES.includes(auth.role)) return { unlimited: true as const };
-    return this.reserveStudentMessage(auth.id);
+  private reserveFor(auth: AuthUser) {
+    return this.quota.reserve(auth);
   }
 
-  async usage(auth: AuthUser) {
-    if (ADMIN_ROLES.includes(auth.role)) return { unlimited: true as const };
-    const day = this.utcDay();
-    const [limit, record] = await Promise.all([
-      this.dailyLimit(),
-      this.prisma.aiUsage.findUnique({ where: { userId_day: { userId: auth.id, day } } }),
-    ]);
-    const used = record?.count ?? 0;
-    return { limit, used, remaining: Math.max(0, limit - used), resetsAt: new Date(day.getTime() + 86_400_000) };
+  usage(auth: AuthUser) {
+    return this.quota.usage(auth);
   }
 
   private async studentLesson(auth: AuthUser, lessonId: string) {
@@ -236,7 +172,7 @@ export class AiService {
       let authorship: { concern: boolean; confidence: number; rationale: string } | null = null;
       if (sub.content.trim().length >= 100) {
         try {
-          await this.reserveStudentMessage(sub.userId);
+          await this.quota.reserveUser(sub.userId);
           const raw = await this.invoke(
             'Assess whether the writing has stylistic signs of AI generation, but treat this as highly uncertain and never as proof. Return JSON only: {"concern":boolean,"confidence":number,"rationale":"brief neutral note"}. Do not make a misconduct judgment.',
             [{ role: 'user', content: sub.content.slice(0, 10_000) }],
@@ -260,11 +196,6 @@ export class AiService {
   }
 
   private async invoke(system: string, messages: AiMessage[]) {
-    try {
-      return await askAI({ system, messages });
-    } catch (error) {
-      this.logger.warn(`AI request failed: ${String(error)}`);
-      throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, 'AI_TEMPORARILY_UNAVAILABLE');
-    }
+    return (await this.router.complete({ system, messages })).text;
   }
 }
