@@ -440,3 +440,4 @@ export function getBlueprintForDay(dayIndex: number): CurriculumDayBlueprint {
     targetStack: 'fullstack',
   };
 }
+

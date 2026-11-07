@@ -104,3 +104,4 @@ ALTER TABLE "student_submissions" ADD CONSTRAINT "student_submissions_student_id
 
 -- AddForeignKey
 ALTER TABLE "student_submissions" ADD CONSTRAINT "student_submissions_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "daily_assignments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

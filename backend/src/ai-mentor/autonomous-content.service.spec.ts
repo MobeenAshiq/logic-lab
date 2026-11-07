@@ -38,3 +38,4 @@ describe('Autonomous Curriculum Blueprints', () => {
     expect(day50.weekNumber).toBe(8);
   });
 });
+
