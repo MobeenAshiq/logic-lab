@@ -186,12 +186,34 @@ AI/ML & Data Science) and the default landing-page blocks. It never overwrites C
 
 ### Phase 9: AI learning helpers
 
-AI requests are made only by the backend. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=groq` and
-the corresponding `GEMINI_API_KEY` or `GROQ_API_KEY` in the backend environment; optional
-`AI_MODEL` overrides the provider's default lightweight model. Never add provider keys to the
-frontend environment. The student daily request cap defaults to 30 and can be changed by an
+AI requests are made only by the backend, through `AiRouterService` (see the AI Mentor section
+below for provider fallback and keys). Never add provider keys to the frontend environment. The student daily request cap defaults to 30 and can be changed by an
 admin under Settings. Submission AI/similarity signals are mentor review hints only and never
 apply an automatic penalty.
+
+### AI Mentor and admin AI control panel
+
+Students chat at `/student/mentor` (roadmap · chat · code sandbox). Admins manage it at
+`/admin/ai`: usage vs. free quotas, a live chat inspector, the safety log, provider keys, and
+prompt tuning.
+
+- **Provider fallback** (`src/ai/ai-router.service.ts`): every AI feature tries providers in the
+  admin-set order (default Gemini → Groq → OpenRouter). A provider is skipped when it has no key
+  or has reached its daily cap. If a call returns 429, 5xx, a 4xx, or times out, the next provider
+  is tried. A failed provider then sits out briefly (30 s after a 429, 10 min after a 4xx). Calls,
+  failures, 429s and tokens are counted per provider per UTC day in `ai_provider_usage`.
+- **Keys**: `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` in `.env`, or saved in the admin
+  panel (AES-GCM encrypted with `ENCRYPTION_KEY`; admin-saved keys win). `AI_PROVIDER`/`AI_MODEL`
+  are no longer used; models are set per provider in the panel (setting `ai_mentor`).
+- **Guardrails** (`src/ai-mentor/guardrail.ts`): a local filter blocks obvious prompt injections,
+  malware requests and admin-defined phrases before any API call. The model is told to answer
+  off-topic or unsafe messages with a `[[REFUSE:…]]` sentinel, which the server swaps for the
+  refusal message. Both cases are written to `security_flag_logs` for review. The refusal protocol
+  is appended in code, so editing the system prompt cannot disable it.
+- **Context**: chats can be scoped to a course/module; the best-matching published, unlocked lesson
+  text is added to the prompt. History is read from `ai_chat_logs` on the server, never from the
+  client, and refused turns are left out.
+- Mentor messages share the per-user daily AI limit with the other AI features.
 
 ### Phase 10: daily coding challenges
 

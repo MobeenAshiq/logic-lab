@@ -116,14 +116,22 @@ export const en = {
       'AI code review is available only for ungraded practice lessons.',
     ACTIVE_ASSESSMENT_AI_DISABLED:
       'AI help is paused while you are taking a graded quiz. Return to the tutor after submitting.',
-    AI_INVALID_RESPONSE: 'The AI could not create a usable response. Please try again.',
+    AI_INVALID_RESPONSE:
+      'The AI could not create a usable response. Please try again.',
     AI_TEMPORARILY_UNAVAILABLE:
       'AI features are temporarily unavailable. Please try again shortly.',
+    AI_MENTOR_DISABLED:
+      'The AI Mentor is switched off right now. Please check back later.',
+    AI_SESSION_NOT_FOUND: 'AI Mentor chat not found.',
+    AI_FLAG_NOT_FOUND: 'Safety log entry not found.',
+    AI_MODULE_NOT_IN_COURSE:
+      'That module does not belong to the selected course.',
     CHALLENGE_DATE_INVALID: 'That challenge date is not available.',
     CHALLENGE_NOT_FOUND: 'Daily challenge not found.',
     CHALLENGE_NOT_OPEN: 'This challenge is not open for submissions.',
     CHALLENGE_TESTS_INVALID: 'This challenge is not configured correctly.',
-    CHALLENGE_TEST_COUNT_MISMATCH: 'The visible test list does not match the challenge.',
+    CHALLENGE_TEST_COUNT_MISMATCH:
+      'The visible test list does not match the challenge.',
   },
   email: {
     verifySubject: 'Your LogicLab verification code',

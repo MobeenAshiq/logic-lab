@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AI_PROVIDERS, DEFAULT_MODELS } from '../lib/ai';
 
 const text = (min: number, max: number) => z.string().trim().min(min).max(max);
 const wallet = z.strictObject({
@@ -41,6 +42,31 @@ export const SETTING_SCHEMAS = {
   ai_daily_limit: z.strictObject({
     studentMessages: z.number().int().min(0).max(500),
   }),
+  /** AI Mentor behaviour and provider routing, tunable without a redeploy. */
+  ai_mentor: z.strictObject({
+    enabled: z.boolean(),
+    systemPrompt: text(20, 8000),
+    refusalMessage: text(10, 1000),
+    /** Tried in order; the next one is used on 429, 5xx, timeouts or a missing key. */
+    providerOrder: z
+      .array(z.enum(AI_PROVIDERS))
+      .min(1)
+      .max(AI_PROVIDERS.length)
+      .refine((v) => new Set(v).size === v.length, 'Each provider once.'),
+    models: z.strictObject({
+      gemini: text(1, 120),
+      groq: text(1, 120),
+      openrouter: text(1, 120),
+    }),
+    /** Our own per-day request cap per provider (keeps us under the free quota). 0 = no cap. */
+    dailyCaps: z.strictObject({
+      gemini: z.number().int().min(0).max(1_000_000),
+      groq: z.number().int().min(0).max(1_000_000),
+      openrouter: z.number().int().min(0).max(1_000_000),
+    }),
+    /** Extra phrases the local guardrail blocks (case-insensitive). */
+    blockedPhrases: z.array(text(2, 200)).max(100),
+  }),
 };
 
 export type SettingKey = keyof typeof SETTING_SCHEMAS;
@@ -71,4 +97,24 @@ export const SETTING_DEFAULTS: Settings = {
     plagiarism_confirmed: -50,
   },
   ai_daily_limit: { studentMessages: 10 },
+  ai_mentor: {
+    enabled: true,
+    systemPrompt: [
+      'You are the LogicLab AI Mentor. You teach programming to students from layman-level to senior engineer standards.',
+      'Guidelines:',
+      '1. Explain complex topics using real-world analogies first, followed by clear code examples.',
+      '2. Structure all web development explanations around clean architecture (Routes, Services, Controllers, Queues, WebSockets).',
+      "3. Provide code implementations in Node.js, Python, PHP, Next.js, or C++ based on the student's focus.",
+      '4. Strictly decline non-technical or inappropriate questions.',
+      '',
+      'Allowed topics: programming fundamentals (C++, Node.js, Python, PHP, Next.js), data structures & algorithms, OOP, web architecture (APIs, routes, controllers, queues, WebSockets), AI & computer vision (YOLOv8, RAG, LLMs), software engineering best practices and tech career advice.',
+      'Out of scope: politics, entertainment, personal advice, working exploit payloads or malware, illegal scripts, offensive language. Defensive security concepts (e.g. how to prevent SQL injection) are fine.',
+    ].join('\n'),
+    refusalMessage:
+      'I am your LogicLab AI Mentor. I only assist with software development, computer science, and tech career topics. Please ask a technical question related to your module.',
+    providerOrder: ['gemini', 'groq', 'openrouter'],
+    models: { ...DEFAULT_MODELS },
+    dailyCaps: { gemini: 1400, groq: 14000, openrouter: 50 },
+    blockedPhrases: [],
+  },
 };

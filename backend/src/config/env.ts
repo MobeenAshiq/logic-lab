@@ -14,10 +14,14 @@ export const envSchema = z.object({
   FRONTEND_URL: z.url(),
   API_URL: z.url(),
   DATABASE_URL: z.string().min(1),
-  AI_PROVIDER: z.enum(['gemini', 'groq']).default('gemini'),
+  // Legacy single-provider settings; provider order and models now live in the
+  // ai_mentor admin setting. Kept so existing .env files still validate.
+  AI_PROVIDER: z.enum(['gemini', 'groq', 'openrouter']).default('gemini'),
   AI_MODEL: optional,
+  // Fallback keys; keys saved in Admin > AI Mentor override these.
   GEMINI_API_KEY: optional,
   GROQ_API_KEY: optional,
+  OPENROUTER_API_KEY: optional,
 
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
