@@ -1,7 +1,13 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { DailyContentStatus, Prisma, StudentSubmissionStatus } from '@prisma/client';
+import {
+  DailyContentStatus,
+  Prisma,
+  StudentSubmissionStatus,
+} from '@prisma/client';
+import { AiQuotaService } from '../ai/ai-quota.service';
 import { AiRouterService } from '../ai/ai-router.service';
+import type { AuthUser } from '../auth/auth.types';
 import { AppException } from '../common/app-exception';
 import { PointsService } from '../points/points.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,8 +16,17 @@ import {
   CURRICULUM_BLUEPRINTS,
   getBlueprintForDay,
 } from './autonomous-curriculum.data';
+import {
+  CodingAgentService,
+  isRunnableLanguage,
+  type RunnableLanguage,
+  runnableTests,
+  scoreFromTests,
+  type TestCase,
+} from './coding-agent.service';
 import type {
   GenerateDayInput,
+  HintInput,
   SubmitAssignmentInput,
   SubmitQuizInput,
   UpdateArticleInput,
@@ -28,6 +43,8 @@ interface GeneratedAssignment {
   promptInstructions: string;
   starterCode: string;
   testCases: Array<{ input: unknown; expected: unknown; description: string }>;
+  /** Set only when testCases can be run against solution() (see CodingAgentService). */
+  language?: RunnableLanguage;
 }
 
 interface GeneratedDailyPayload {
@@ -47,6 +64,8 @@ export class AutonomousContentService {
     private readonly settings: SettingsService,
     private readonly aiRouter: AiRouterService,
     private readonly points: PointsService,
+    private readonly coding: CodingAgentService,
+    private readonly quota: AiQuotaService,
   ) {}
 
   /**
@@ -59,7 +78,9 @@ export class AutonomousContentService {
     try {
       const config = await this.settings.get('ai_autonomous_content');
       if (!config.enabled) {
-        this.logger.log('Autonomous content engine is disabled in settings; skipping.');
+        this.logger.log(
+          'Autonomous content engine is disabled in settings; skipping.',
+        );
         return;
       }
 
@@ -78,7 +99,10 @@ export class AutonomousContentService {
       });
       this.logger.log(`Day ${nextDay} generated successfully.`);
     } catch (error) {
-      this.logger.error(`Daily midnight cron generation failed: ${String(error)}`, error);
+      this.logger.error(
+        `Daily midnight cron generation failed: ${String(error)}`,
+        error,
+      );
     }
   }
 
@@ -113,11 +137,9 @@ export class AutonomousContentService {
     });
 
     if (existing) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        'DAILY_ARTICLE_EXISTS',
-        { message: `Day ${dayIndex} article already exists ("${existing.title}").` },
-      );
+      throw new AppException(HttpStatus.CONFLICT, 'DAILY_ARTICLE_EXISTS', {
+        message: `Day ${dayIndex} article already exists ("${existing.title}").`,
+      });
     }
 
     // Ensure curriculum module exists
@@ -137,7 +159,12 @@ export class AutonomousContentService {
     }
 
     // Generate content using AI router (Gemini 1.5 Flash -> Groq -> OpenRouter)
-    const generated = await this.promptAiGenerator(dayIndex, topic, targetStack, blueprint.analogyHook);
+    const generated = await this.promptAiGenerator(
+      dayIndex,
+      topic,
+      targetStack,
+      blueprint.analogyHook,
+    );
 
     // Persist Article, Quiz, and Assignment in transaction
     const article = await this.prisma.$transaction(async (tx) => {
@@ -147,7 +174,9 @@ export class AutonomousContentService {
           dayIndex,
           title: generated.title,
           markdownContent: generated.markdownContent,
-          status: autoPublish ? DailyContentStatus.published : DailyContentStatus.draft,
+          status: autoPublish
+            ? DailyContentStatus.published
+            : DailyContentStatus.draft,
           publishedDate: new Date(),
         },
       });
@@ -171,7 +200,9 @@ export class AutonomousContentService {
           articleId: createdArticle.id,
           promptInstructions: generated.assignment.promptInstructions,
           starterCode: generated.assignment.starterCode,
-          testCases: generated.assignment.testCases as unknown as Prisma.InputJsonValue,
+          testCases: generated.assignment
+            .testCases as unknown as Prisma.InputJsonValue,
+          language: generated.assignment.language ?? null,
         },
       });
 
@@ -206,7 +237,7 @@ export class AutonomousContentService {
       '4. Include clean, modern, well-commented code examples in Python, JavaScript/Node.js, or C++ based on the topic.',
       '5. Conclude with common rookie mistakes and senior dev best practices.',
       '6. Generate an auto-graded 5-question quiz testing both conceptual understanding and code reading.',
-      '7. Generate a hands-on coding assignment with clear prompt instructions, starter code, and sample test cases.',
+      '7. Generate a hands-on coding assignment in Python or JavaScript: the student writes a function named solution. Give 3-6 test cases where "input" is the JSON array of arguments and "expected" is the JSON return value, so they can be run automatically.',
       '8. Write as a human LogicLab instructor. Never say this lesson was written or generated by AI.',
       '',
       'You MUST return ONLY valid JSON matching this exact structure with no surrounding markdown code fences:',
@@ -224,9 +255,10 @@ export class AutonomousContentService {
       '  ],',
       '  "assignment": {',
       '    "promptInstructions": "Coding task instructions in markdown",',
-      '    "starterCode": "starter code template",',
+      '    "language": "python" or "javascript",',
+      '    "starterCode": "def solution(...): or function solution(...) { } template",',
       '    "testCases": [',
-      '      { "input": "...", "expected": "...", "description": "..." }',
+      '      { "input": [3, 4], "expected": 7, "description": "adds two numbers" }',
       '    ]',
       '  }',
       '}',
@@ -248,7 +280,8 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
 
       // Strip potential markdown codeblock formatting ```json ... ```
       let cleaned = response.text.trim();
-      if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*/, '');
+      if (cleaned.startsWith('```json'))
+        cleaned = cleaned.replace(/^```json\s*/, '');
       if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*/, '');
       if (cleaned.endsWith('```')) cleaned = cleaned.replace(/\s*```$/, '');
 
@@ -268,24 +301,49 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
           markdownContent: parsed.markdownContent,
           quiz: parsed.quiz.slice(0, 5).map((q: any) => ({
             question: String(q.question || 'Quiz Question'),
-            options: Array.isArray(q.options) ? q.options.map(String) : ['A', 'B', 'C', 'D'],
+            options: Array.isArray(q.options)
+              ? q.options.map(String)
+              : ['A', 'B', 'C', 'D'],
             correctIndex: Number.isInteger(q.correctIndex) ? q.correctIndex : 0,
-            explanation: String(q.explanation || 'Review the lesson concepts for more detail.'),
+            explanation: String(
+              q.explanation || 'Review the lesson concepts for more detail.',
+            ),
           })),
           assignment: {
             promptInstructions: String(parsed.assignment.promptInstructions),
-            starterCode: String(parsed.assignment.starterCode || '// Write your solution here\n'),
+            starterCode: String(
+              parsed.assignment.starterCode || '// Write your solution here\n',
+            ),
             testCases: Array.isArray(parsed.assignment.testCases)
               ? parsed.assignment.testCases
-              : [{ input: 'test', expected: 'test', description: 'Basic check' }],
+              : [
+                  {
+                    input: 'test',
+                    expected: 'test',
+                    description: 'Basic check',
+                  },
+                ],
+            // Only mark it runnable when the tests really have the runner's shape.
+            language:
+              isRunnableLanguage(parsed.assignment.language) &&
+              runnableTests(parsed.assignment.testCases).length > 0
+                ? parsed.assignment.language
+                : undefined,
           },
         };
       }
     } catch (err) {
-      this.logger.warn(`AI provider generation for Day ${dayIndex} failed or returned unparseable JSON: ${String(err)}. Using blueprint fallback.`);
+      this.logger.warn(
+        `AI provider generation for Day ${dayIndex} failed or returned unparseable JSON: ${String(err)}. Using blueprint fallback.`,
+      );
     }
 
-    return this.buildBlueprintFallback(dayIndex, topic, targetStack, analogyHook);
+    return this.buildBlueprintFallback(
+      dayIndex,
+      topic,
+      targetStack,
+      analogyHook,
+    );
   }
 
   /**
@@ -352,10 +410,12 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
             'To disable garbage collection permanently',
           ],
           correctIndex: 0,
-          explanation: 'Structuring logic and memory reliably is the fundamental goal of this software pattern.',
+          explanation:
+            'Structuring logic and memory reliably is the fundamental goal of this software pattern.',
         },
         {
-          question: 'Which of the following best describes the real-world analogy used in this lesson?',
+          question:
+            'Which of the following best describes the real-world analogy used in this lesson?',
           options: [
             analogyHook,
             'A random number generator with no memory',
@@ -363,10 +423,12 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
             'A hard reboot cycle',
           ],
           correctIndex: 0,
-          explanation: 'The analogy connects the hardware abstraction to intuitive daily mental models.',
+          explanation:
+            'The analogy connects the hardware abstraction to intuitive daily mental models.',
         },
         {
-          question: 'What is a critical edge case to guard against when implementing this pattern?',
+          question:
+            'What is a critical edge case to guard against when implementing this pattern?',
           options: [
             'Null or empty input values causing unexpected runtime exceptions',
             'Running out of monitor display resolution',
@@ -374,10 +436,12 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
             'Writing comments longer than 80 characters',
           ],
           correctIndex: 0,
-          explanation: 'Defensive validation against empty, null, or out-of-bounds input is paramount.',
+          explanation:
+            'Defensive validation against empty, null, or out-of-bounds input is paramount.',
         },
         {
-          question: 'In terms of clean architecture, what is a key recommendation for this topic?',
+          question:
+            'In terms of clean architecture, what is a key recommendation for this topic?',
           options: [
             'Keep units of code focused on a single responsibility with clear interfaces',
             'Put all business logic inside the global scope',
@@ -385,10 +449,12 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
             'Never write unit tests until code is deployed to production',
           ],
           correctIndex: 0,
-          explanation: 'Single responsibility and decoupled interfaces allow maintainable, testable systems.',
+          explanation:
+            'Single responsibility and decoupled interfaces allow maintainable, testable systems.',
         },
         {
-          question: 'How should a senior engineer balance clean code with performance here?',
+          question:
+            'How should a senior engineer balance clean code with performance here?',
           options: [
             'Make it correct and readable first, benchmark under load, then optimize bottlenecks',
             'Write unreadable micro-optimizations from the very first draft',
@@ -396,7 +462,8 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
             'Rewrite the entire application in Assembly',
           ],
           correctIndex: 0,
-          explanation: 'Premature optimization is a major anti-pattern; write clean code and optimize backed by metrics.',
+          explanation:
+            'Premature optimization is a major anti-pattern; write clean code and optimize backed by metrics.',
         },
       ],
       assignment: {
@@ -412,8 +479,16 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
           ? `def solve(data):\n    # TODO: Implement your solution for Day ${dayIndex}\n    if not data:\n        return None\n    return data\n`
           : `export function solve(data: any): any {\n  // TODO: Implement your solution for Day ${dayIndex}\n  if (!data) return null;\n  return data;\n}\n`,
         testCases: [
-          { input: 'sample_input_1', expected: 'expected_output_1', description: 'Handles standard inputs' },
-          { input: '', expected: null, description: 'Handles empty boundary case' },
+          {
+            input: 'sample_input_1',
+            expected: 'expected_output_1',
+            description: 'Handles standard inputs',
+          },
+          {
+            input: '',
+            expected: null,
+            description: 'Handles empty boundary case',
+          },
         ],
       },
     };
@@ -426,7 +501,11 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
   /**
    * Lists all daily articles for admin dashboard with quiz, assignment, and submission metrics.
    */
-  async listAdminArticles(opts: { page?: number; limit?: number; status?: string }) {
+  async listAdminArticles(opts: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }) {
     const page = Math.max(1, opts.page ?? 1);
     const limit = Math.min(50, Math.max(1, opts.limit ?? 20));
     const skip = (page - 1) * limit;
@@ -470,7 +549,9 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
         moduleName: a.module.moduleName,
         targetStack: a.module.targetStack,
         weekNumber: a.module.weekNumber,
-        quizQuestionsCount: Array.isArray(a.quiz?.questionsJson) ? (a.quiz.questionsJson as any[]).length : 0,
+        quizQuestionsCount: Array.isArray(a.quiz?.questionsJson)
+          ? (a.quiz.questionsJson as any[]).length
+          : 0,
         assignmentSubmissionsCount: a.assignment?._count.submissions ?? 0,
         createdAt: a.createdAt,
         updatedAt: a.updatedAt,
@@ -494,7 +575,11 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
               orderBy: { createdAt: 'desc' },
               include: {
                 student: {
-                  select: { id: true, email: true, profile: { select: { fullName: true } } },
+                  select: {
+                    id: true,
+                    email: true,
+                    profile: { select: { fullName: true } },
+                  },
                 },
               },
             },
@@ -528,8 +613,12 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
         data: {
           title: input.title ?? undefined,
           markdownContent: input.markdownContent ?? undefined,
-          status: input.status ? (input.status as DailyContentStatus) : undefined,
-          publishedDate: input.publishedDate ? new Date(input.publishedDate) : undefined,
+          status: input.status
+            ? (input.status as DailyContentStatus)
+            : undefined,
+          publishedDate: input.publishedDate
+            ? new Date(input.publishedDate)
+            : undefined,
         },
       });
 
@@ -542,7 +631,8 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
         await tx.dailyQuiz.update({
           where: { id: article.quiz.id },
           data: {
-            questionsJson: input.quiz.questionsJson as unknown as Prisma.InputJsonValue,
+            questionsJson: input.quiz
+              .questionsJson as unknown as Prisma.InputJsonValue,
             autoGradeKey,
           },
         });
@@ -554,7 +644,8 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
           data: {
             promptInstructions: input.assignment.promptInstructions,
             starterCode: input.assignment.starterCode ?? undefined,
-            testCases: (input.assignment.testCases ?? undefined) as unknown as Prisma.InputJsonValue | undefined,
+            testCases: (input.assignment.testCases ?? undefined) as unknown as
+              Prisma.InputJsonValue | undefined,
           },
         });
       }
@@ -567,7 +658,9 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
    * Deletes a daily article and its cascades (quiz, assignment, submissions).
    */
   async deleteArticle(id: string) {
-    const article = await this.prisma.dailyArticle.findUnique({ where: { id } });
+    const article = await this.prisma.dailyArticle.findUnique({
+      where: { id },
+    });
     if (!article) {
       throw new AppException(HttpStatus.NOT_FOUND, 'DAILY_ARTICLE_NOT_FOUND');
     }
@@ -579,9 +672,19 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
    * Admin dashboard statistics: counts of published, drafts, submissions, average score.
    */
   async getAdminStats() {
-    const [publishedCount, draftCount, submissionsCount, scoreAggregate, activeConfig] = await Promise.all([
-      this.prisma.dailyArticle.count({ where: { status: DailyContentStatus.published } }),
-      this.prisma.dailyArticle.count({ where: { status: DailyContentStatus.draft } }),
+    const [
+      publishedCount,
+      draftCount,
+      submissionsCount,
+      scoreAggregate,
+      activeConfig,
+    ] = await Promise.all([
+      this.prisma.dailyArticle.count({
+        where: { status: DailyContentStatus.published },
+      }),
+      this.prisma.dailyArticle.count({
+        where: { status: DailyContentStatus.draft },
+      }),
       this.prisma.studentSubmission.count(),
       this.prisma.studentSubmission.aggregate({ _avg: { score: true } }),
       this.settings.get('ai_autonomous_content'),
@@ -609,7 +712,11 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
   /**
    * Admin: List student submissions with code and AI feedback.
    */
-  async listAdminSubmissions(opts: { page?: number; limit?: number; assignmentId?: string }) {
+  async listAdminSubmissions(opts: {
+    page?: number;
+    limit?: number;
+    assignmentId?: string;
+  }) {
     const page = Math.max(1, opts.page ?? 1);
     const limit = Math.min(50, Math.max(1, opts.limit ?? 20));
     const skip = (page - 1) * limit;
@@ -626,7 +733,11 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
         orderBy: { createdAt: 'desc' },
         include: {
           student: {
-            select: { id: true, email: true, profile: { select: { fullName: true } } },
+            select: {
+              id: true,
+              email: true,
+              profile: { select: { fullName: true } },
+            },
           },
           assignment: {
             include: {
@@ -796,7 +907,11 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
    * Auto-grade daily quiz: evaluates answers immediately, returns score, pass status,
    * correct answers, and explanations.
    */
-  async submitDailyQuiz(quizId: string, input: SubmitQuizInput, userId: string) {
+  async submitDailyQuiz(
+    quizId: string,
+    input: SubmitQuizInput,
+    userId: string,
+  ) {
     const quiz = await this.prisma.dailyQuiz.findUnique({
       where: { id: quizId },
       include: { article: true },
@@ -806,7 +921,9 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
       throw new AppException(HttpStatus.NOT_FOUND, 'DAILY_QUIZ_NOT_FOUND');
     }
 
-    const questions = Array.isArray(quiz.questionsJson) ? (quiz.questionsJson as unknown as GeneratedQuizItem[]) : [];
+    const questions = Array.isArray(quiz.questionsJson)
+      ? (quiz.questionsJson as unknown as GeneratedQuizItem[])
+      : [];
     const autoKey = (quiz.autoGradeKey as Record<string, number>) || {};
 
     let correctCount = 0;
@@ -848,26 +965,45 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
    * Line-by-line AI Code Review & Scoring for Daily Assignment:
    * Uses Gemini 1.5 Flash / Groq with supportive senior dev persona.
    */
-  async submitDailyAssignment(assignmentId: string, input: SubmitAssignmentInput, userId: string) {
+  async submitDailyAssignment(
+    assignmentId: string,
+    input: SubmitAssignmentInput,
+    userId: string,
+  ) {
     const assignment = await this.prisma.dailyAssignment.findUnique({
       where: { id: assignmentId },
       include: { article: { include: { module: true } } },
     });
 
     if (!assignment) {
-      throw new AppException(HttpStatus.NOT_FOUND, 'DAILY_ASSIGNMENT_NOT_FOUND');
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        'DAILY_ASSIGNMENT_NOT_FOUND',
+      );
     }
 
-    // Call AI to evaluate student submission line-by-line
-    const evaluation = await this.evaluateSubmissionWithAi(
-      assignment.article.title,
-      assignment.promptInstructions,
-      input.code,
-      assignment.testCases,
-    );
+    const tests = runnableTests(assignment.testCases);
+    const evaluation =
+      isRunnableLanguage(assignment.language) && tests.length > 0
+        ? await this.evaluateWithTests(
+            assignment.language,
+            tests,
+            assignment.promptInstructions,
+            input.code,
+            userId,
+          )
+        : await this.evaluateSubmissionWithAi(
+            assignment.article.title,
+            assignment.promptInstructions,
+            input.code,
+            assignment.testCases,
+          );
 
     // Save submission
-    const status = evaluation.score >= 60 ? StudentSubmissionStatus.graded : StudentSubmissionStatus.needs_revision;
+    const status =
+      evaluation.score >= 60
+        ? StudentSubmissionStatus.graded
+        : StudentSubmissionStatus.needs_revision;
 
     const submission = await this.prisma.studentSubmission.create({
       data: {
@@ -892,6 +1028,72 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
       feedback: evaluation.feedback,
       passed: evaluation.score >= 60,
     };
+  }
+
+  /** Tests decide the score; the coding agent only explains the result. */
+  private async evaluateWithTests(
+    language: RunnableLanguage,
+    tests: TestCase[],
+    task: string,
+    code: string,
+    userId: string,
+  ): Promise<{ score: number; feedback: string }> {
+    const run = await this.coding.runTests(language, code, tests);
+    const score = scoreFromTests(run);
+    const summary = run.error
+      ? `**Your code did not run:** ${run.error}`
+      : `**Tests: ${run.passed} of ${run.total} passed.**`;
+    let review = '';
+    try {
+      review = await this.coding.review({ userId, task, code, tests, run });
+    } catch {
+      // The score stands without the written review.
+      review =
+        'A written review is not available right now; your score is based on the tests above.';
+    }
+    return { score, feedback: `${summary}\n\n${review}` };
+  }
+
+  /**
+   * A hint for a daily assignment, from a nudge (1) to pseudocode (3).
+   * Never the full solution. Counts against the student's daily AI allowance.
+   */
+  async dailyAssignmentHint(
+    assignmentId: string,
+    input: HintInput,
+    auth: AuthUser,
+  ) {
+    const assignment = await this.prisma.dailyAssignment.findUnique({
+      where: { id: assignmentId },
+    });
+    if (!assignment) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        'DAILY_ASSIGNMENT_NOT_FOUND',
+      );
+    }
+    await this.quota.reserve(auth);
+    try {
+      const tests = runnableTests(assignment.testCases);
+      const run =
+        isRunnableLanguage(assignment.language) &&
+        tests.length > 0 &&
+        input.code.trim()
+          ? await this.coding.runTests(assignment.language, input.code, tests)
+          : undefined;
+      const hint = await this.coding.hint({
+        userId: auth.id,
+        task: assignment.promptInstructions,
+        code: input.code,
+        level: input.level,
+        run,
+        tests,
+      });
+      return { level: input.level, hint };
+    } catch (err) {
+      await this.quota.refund(auth);
+      throw err;
+    }
   }
 
   /**
@@ -948,25 +1150,25 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
 
       const text = response.text.trim();
       const scoreMatch = text.match(/SCORE:\s*(\d+)/i);
-      const score = scoreMatch ? Math.min(100, Math.max(0, parseInt(scoreMatch[1], 10))) : 75;
+      // No score in the reply: refuse rather than guess, so nobody passes by accident.
+      if (!scoreMatch) {
+        throw new AppException(HttpStatus.BAD_GATEWAY, 'AI_INVALID_RESPONSE');
+      }
+      const score = Math.min(100, Math.max(0, parseInt(scoreMatch[1], 10)));
 
       const feedbackMatch = text.split(/FEEDBACK:\s*/i);
-      const feedback = feedbackMatch.length > 1 ? feedbackMatch[1].trim() : text;
+      const feedback =
+        feedbackMatch.length > 1 ? feedbackMatch[1].trim() : text;
 
       return { score, feedback };
     } catch (err) {
-      this.logger.warn(`AI submission evaluator call failed: ${String(err)}. Using fallback review.`);
-      return {
-        score: 75,
-        feedback: [
-          '### Senior Mentor Review',
-          'Great effort on submitting your solution!',
-          '',
-          '- **Syntax & Structure:** Your code compiles and demonstrates the intended pattern.',
-          '- **Recommendation:** Make sure to test with empty inputs and boundary cases to guarantee robustness.',
-          '- **Next Steps:** Review the daily article code examples to see idiomatic production implementations.',
-        ].join('\n'),
-      };
+      if (err instanceof AppException) throw err;
+      // No review means no grade: the student tries again later instead of getting a free pass.
+      this.logger.warn(`AI submission evaluator call failed: ${String(err)}`);
+      throw new AppException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'AI_TEMPORARILY_UNAVAILABLE',
+      );
     }
   }
 }

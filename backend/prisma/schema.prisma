@@ -1400,6 +1400,8 @@ model DailyAssignment {
   promptInstructions String              @map("prompt_instructions") @db.Text
   starterCode        String              @default("") @map("starter_code") @db.Text
   testCases          Json                @default("[]") @map("test_cases")
+  /// "python" | "javascript" when testCases are runnable ({ input: [...], expected }) against solution(); null = review only.
+  language           String?
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -1426,4 +1428,24 @@ model StudentSubmission {
   @@index([studentId, assignmentId])
   @@index([assignmentId, createdAt])
   @@map("student_submissions")
+}
+
+/// One AI agent call: what ran, for whom, and whether it worked (cost and debugging log).
+/// user_id has no foreign key on purpose: the log outlives deleted accounts.
+model AgentRun {
+  id        String   @id @default(uuid()) @db.Uuid
+  agent     String
+  userId    String?  @map("user_id") @db.Uuid
+  ok        Boolean
+  error     String?
+  provider  String?
+  model     String?
+  tokensIn  Int      @default(0) @map("tokens_in")
+  tokensOut Int      @default(0) @map("tokens_out")
+  ms        Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([agent, createdAt])
+  @@index([userId, createdAt])
+  @@map("agent_runs")
 }

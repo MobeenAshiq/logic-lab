@@ -58,3 +58,9 @@ export const submitAssignmentSchema = z.object({
 
 export type SubmitAssignmentInput = z.infer<typeof submitAssignmentSchema>;
 
+export const hintSchema = z.object({
+  code: z.string().max(20000).default(''),
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+});
+
+export type HintInput = z.infer<typeof hintSchema>;

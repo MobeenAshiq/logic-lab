@@ -10,6 +10,7 @@ import {
   FileCode,
   GraduationCap,
   HelpCircle,
+  Lightbulb,
   Loader2,
   RotateCcw,
   Send,
@@ -70,6 +71,8 @@ export default function StudentDailyPage() {
   // Coding assignment state
   const [code, setCode] = useState<string>("");
   const [assignmentResult, setAssignmentResult] = useState<AssignmentResult | null>(null);
+  // Hints get more specific each time: nudge → where the bug is → pseudocode. Never the answer.
+  const [hints, setHints] = useState<{ level: number; hint: string }[]>([]);
 
   // Fetch all published days list
   const listQuery = useQuery({
@@ -110,6 +113,7 @@ export default function StudentDailyPage() {
           setAssignmentResult(null);
         }
       }
+      setHints([]);
     }
   }, [article, selectedDay]);
 
@@ -162,6 +166,20 @@ export default function StudentDailyPage() {
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : "Failed to submit code.";
       toast.error(msg);
+    },
+  });
+
+  const hintMutation = useMutation({
+    mutationFn: () => {
+      if (!article?.assignment) throw new Error("No assignment found");
+      return api<{ level: number; hint: string }>(
+        `/student/autonomous/assignments/${article.assignment.id}/hint`,
+        { method: "POST", body: { code, level: Math.min(hints.length + 1, 3) } },
+      );
+    },
+    onSuccess: (res) => setHints((h) => [...h, res]),
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Could not get a hint.");
     },
   });
 
@@ -458,9 +476,25 @@ export default function StudentDailyPage() {
                           Score: {assignmentResult.score}/100
                         </Badge>
                       </div>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap font-sans text-muted-foreground bg-card p-3 rounded border">
-                        {assignmentResult.feedback}
+                      <div className="bg-card rounded border p-3 text-sm">
+                        <Markdown>{assignmentResult.feedback}</Markdown>
                       </div>
+                    </Card>
+                  )}
+
+                  {hints.length > 0 && (
+                    <Card className="border-primary/30 bg-primary/5 p-5">
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <Lightbulb className="size-4 text-primary" /> Hints
+                      </h4>
+                      <ol className="space-y-3">
+                        {hints.map((h) => (
+                          <li key={h.level} className="bg-card rounded border p-3 text-sm">
+                            <p className="text-muted-foreground mb-1 text-xs font-semibold">Hint {h.level} of 3</p>
+                            <Markdown>{h.hint}</Markdown>
+                          </li>
+                        ))}
+                      </ol>
                     </Card>
                   )}
                 </div>
@@ -490,9 +524,19 @@ export default function StudentDailyPage() {
                   />
 
                   <div className="mt-4 pt-3 border-t flex items-center justify-between">
-                    <p className="text-[11px] text-muted-foreground">
-                      Your code will be reviewed line by line.
-                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => hintMutation.mutate()}
+                      disabled={hintMutation.isPending || hints.length >= 3}
+                    >
+                      {hintMutation.isPending ? (
+                        <Loader2 className="mr-1.5 size-4 animate-spin" />
+                      ) : (
+                        <Lightbulb className="mr-1.5 size-4" />
+                      )}
+                      {hints.length >= 3 ? "No more hints" : `Get a hint (${hints.length + 1}/3)`}
+                    </Button>
                     <Button
                       size="sm"
                       onClick={() => submitAssignmentMutation.mutate()}
@@ -500,7 +544,7 @@ export default function StudentDailyPage() {
                     >
                       {submitAssignmentMutation.isPending ? (
                         <>
-                          <Loader2 className="mr-1.5 size-4 animate-spin" /> Reviewing Code...
+                          <Loader2 className="mr-1.5 size-4 animate-spin" /> Running tests...
                         </>
                       ) : (
                         <>

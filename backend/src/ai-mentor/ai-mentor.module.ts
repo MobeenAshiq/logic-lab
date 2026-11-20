@@ -7,6 +7,7 @@ import {
   AdminAutonomousController,
   StudentAutonomousController,
 } from './autonomous-content.controller';
+import { CodingAgentService } from './coding-agent.service';
 import { AutonomousContentService } from './autonomous-content.service';
 import { AdminAiController, MentorController } from './mentor.controller';
 import { MentorService } from './mentor.service';
@@ -19,7 +20,12 @@ import { MentorService } from './mentor.service';
     AdminAutonomousController,
     StudentAutonomousController,
   ],
-  providers: [MentorService, AdminAiService, AutonomousContentService],
+  providers: [
+    MentorService,
+    AdminAiService,
+    AutonomousContentService,
+    CodingAgentService,
+  ],
   exports: [MentorService, AdminAiService, AutonomousContentService],
 })
 export class AiMentorModule {}

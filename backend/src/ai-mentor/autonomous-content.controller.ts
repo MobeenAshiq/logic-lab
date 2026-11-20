@@ -26,6 +26,8 @@ import {
   type SubmitAssignmentInput,
   type SubmitQuizInput,
   type UpdateArticleInput,
+  hintSchema,
+  type HintInput,
 } from './autonomous.schemas';
 
 const listArticlesQuerySchema = z.object({
@@ -94,7 +96,9 @@ export class AdminAutonomousController {
   }
 
   @Get('submissions')
-  submissions(@Query(new ZodValidationPipe(listSubmissionsQuerySchema)) query: any) {
+  submissions(
+    @Query(new ZodValidationPipe(listSubmissionsQuerySchema)) query: any,
+  ) {
     return this.service.listAdminSubmissions(query);
   }
 
@@ -110,7 +114,12 @@ export class AdminAutonomousController {
   ) {
     const current = await this.settings.get('ai_autonomous_content');
     const updated = { ...current, ...body };
-    return this.settings.update('ai_autonomous_content', updated, user.id, null);
+    return this.settings.update(
+      'ai_autonomous_content',
+      updated,
+      user.id,
+      null,
+    );
   }
 }
 
@@ -153,8 +162,18 @@ export class StudentAutonomousController {
   submitAssignment(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(submitAssignmentSchema)) body: SubmitAssignmentInput,
+    @Body(new ZodValidationPipe(submitAssignmentSchema))
+    body: SubmitAssignmentInput,
   ) {
     return this.service.submitDailyAssignment(id, body, user.id);
+  }
+
+  @Post('assignments/:id/hint')
+  assignmentHint(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(hintSchema)) body: HintInput,
+  ) {
+    return this.service.dailyAssignmentHint(id, body, user);
   }
 }
