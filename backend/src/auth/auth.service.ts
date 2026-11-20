@@ -7,8 +7,13 @@ import { randomToken, safeEqual, sha256 } from '../common/crypto';
 import { Env } from '../config/env';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { LoginInput, ResetPasswordInput, SignupInput } from './auth.schemas';
-import { GoogleIdentity, MfaState } from './auth.types';
+import {
+  ChangePasswordInput,
+  LoginInput,
+  ResetPasswordInput,
+  SignupInput,
+} from './auth.schemas';
+import { AuthUser, GoogleIdentity, MfaState } from './auth.types';
 import {
   ClientMeta,
   IssuedTokens,
@@ -229,6 +234,41 @@ export class AuthService {
         REVOKE_REASON.passwordReset,
         tx,
       );
+    });
+  }
+
+  async changePassword(
+    user: AuthUser,
+    input: ChangePasswordInput,
+  ): Promise<void> {
+    const { passwordHash } = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    // Google-only accounts have no password; they use "forgot password" to set one.
+    if (
+      !passwordHash ||
+      !(await compare(input.currentPassword, passwordHash))
+    ) {
+      throw new AppException(HttpStatus.BAD_REQUEST, 'WRONG_PASSWORD');
+    }
+    const newHash = await hash(input.newPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newHash },
+      });
+      // Sign out every other device; keep this one.
+      await tx.userSession.updateMany({
+        where: {
+          userId: user.id,
+          revokedAt: null,
+          id: { not: user.sessionId },
+        },
+        data: {
+          revokedAt: new Date(),
+          revokedReason: REVOKE_REASON.passwordReset,
+        },
+      });
     });
   }
 

@@ -67,6 +67,13 @@ export const SETTING_SCHEMAS = {
     /** Extra phrases the local guardrail blocks (case-insensitive). */
     blockedPhrases: z.array(text(2, 200)).max(100),
   }),
+  /** Autonomous daily content generator & publisher settings. */
+  ai_autonomous_content: z.strictObject({
+    enabled: z.boolean(),
+    autoPublish: z.boolean(),
+    defaultStack: text(1, 50),
+    dailyCronHourUtc: z.number().int().min(0).max(23),
+  }),
 };
 
 export type SettingKey = keyof typeof SETTING_SCHEMAS;
@@ -116,5 +123,11 @@ export const SETTING_DEFAULTS: Settings = {
     models: { ...DEFAULT_MODELS },
     dailyCaps: { gemini: 1400, groq: 14000, openrouter: 50 },
     blockedPhrases: [],
+  },
+  ai_autonomous_content: {
+    enabled: true,
+    autoPublish: false,
+    defaultStack: 'fullstack',
+    dailyCronHourUtc: 0,
   },
 };

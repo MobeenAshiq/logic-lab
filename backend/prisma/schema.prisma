@@ -73,6 +73,7 @@ model User {
   aiSessions        AiSession[]
   aiSecurityFlags   SecurityFlagLog[]       @relation("FlaggedUser")
   challengeSubmissions ChallengeSubmission[]
+  studentSubmissions StudentSubmission[]
 
   @@map("users")
 }
@@ -1327,4 +1328,102 @@ model AiProviderUsage {
   @@unique([provider, day])
   @@index([day])
   @@map("ai_provider_usage")
+}
+
+// ---------------------------------------------------------------------------
+// Autonomous AI Mentor & Content Publisher Engine
+// ---------------------------------------------------------------------------
+
+enum DailyContentStatus {
+  draft
+  published
+}
+
+enum StudentSubmissionStatus {
+  submitted
+  graded
+  needs_revision
+}
+
+model CurriculumModule {
+  id          String   @id @default(uuid()) @db.Uuid
+  moduleName  String   @map("module_name")
+  targetStack String   @default("general") @map("target_stack")
+  weekNumber  Int      @default(1) @map("week_number")
+  dayNumber   Int      @default(1) @map("day_number")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  articles    DailyArticle[]
+
+  @@unique([targetStack, dayNumber])
+  @@map("curriculum_modules")
+}
+
+model DailyArticle {
+  id              String             @id @default(uuid()) @db.Uuid
+  moduleId        String             @map("module_id") @db.Uuid
+  dayIndex        Int                @map("day_index")
+  title           String
+  markdownContent String             @map("markdown_content") @db.Text
+  publishedDate   DateTime           @default(now()) @map("published_date") @db.Timestamptz
+  status          DailyContentStatus @default(draft)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  module          CurriculumModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quiz            DailyQuiz?
+  assignment      DailyAssignment?
+
+  @@unique([moduleId, dayIndex])
+  @@index([status, publishedDate])
+  @@index([dayIndex])
+  @@map("daily_articles")
+}
+
+model DailyQuiz {
+  id            String       @id @default(uuid()) @db.Uuid
+  articleId     String       @unique @map("article_id") @db.Uuid
+  questionsJson Json         @map("questions_json")
+  autoGradeKey  Json         @map("auto_grade_key")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  article       DailyArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("daily_quizzes")
+}
+
+model DailyAssignment {
+  id                 String              @id @default(uuid()) @db.Uuid
+  articleId          String              @unique @map("article_id") @db.Uuid
+  promptInstructions String              @map("prompt_instructions") @db.Text
+  starterCode        String              @default("") @map("starter_code") @db.Text
+  testCases          Json                @default("[]") @map("test_cases")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  article            DailyArticle        @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  submissions        StudentSubmission[]
+
+  @@map("daily_assignments")
+}
+
+model StudentSubmission {
+  id            String                  @id @default(uuid()) @db.Uuid
+  studentId     String                  @map("student_id") @db.Uuid
+  assignmentId  String                  @map("assignment_id") @db.Uuid
+  submittedCode String                  @map("submitted_code") @db.Text
+  aiFeedback    String                  @default("") @map("ai_feedback") @db.Text
+  score         Int                     @default(0)
+  status        StudentSubmissionStatus @default(submitted)
+  createdAt     DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime                @updatedAt @map("updated_at") @db.Timestamptz
+
+  student       User                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignment    DailyAssignment         @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, assignmentId])
+  @@index([assignmentId, createdAt])
+  @@map("student_submissions")
 }

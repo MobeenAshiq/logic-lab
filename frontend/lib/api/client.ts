@@ -101,7 +101,9 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     throw err;
   }
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  // NestJS sends a handler's `null` as a 200 with an empty body; treat that as null.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 /** Uploads a file straight to R2 with a presigned URL from the API. */
