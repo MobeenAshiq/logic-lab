@@ -6,7 +6,8 @@ import { PRESIGN_TTL_SECONDS, R2Service } from './r2.service';
 import { createUploadSchema, newUploadKey } from './uploads';
 import type { CreateUploadInput } from './uploads';
 
-@Roles(Role.admin, Role.super_admin)
+// Mentors upload images for the lessons they edit.
+@Roles(Role.admin, Role.super_admin, Role.mentor)
 @Controller('admin/uploads')
 export class UploadsController {
   constructor(private readonly r2: R2Service) {}

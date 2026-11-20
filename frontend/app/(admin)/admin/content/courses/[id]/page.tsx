@@ -12,6 +12,7 @@ import { MentorsCard } from "@/components/admin/content/mentors-card";
 import { ModuleCard } from "@/components/admin/content/module-card";
 import { type ModuleForm, moduleFormSchema } from "@/components/admin/content/schemas";
 import { SortableList } from "@/components/admin/content/sortable-list";
+import { useEditorPortal } from "@/components/admin/content/use-editor-portal";
 import {
   EmptyState,
   ErrorState,
@@ -75,6 +76,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
+  const portal = useEditorPortal();
 
   const course = useQuery({
     queryKey: ["admin", "course", id],
@@ -98,7 +100,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-        <Link href="/admin/content">
+        <Link href={portal.home}>
           <ArrowLeft /> {s.course.back}
         </Link>
       </Button>
@@ -108,7 +110,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" asChild>
-              <Link href={`/admin/content/courses/${c.id}/questions`}>
+              <Link href={portal.bankHref(c.id)}>
                 <Library /> {t.teaching.nav.questionBank}
               </Link>
             </Button>
@@ -142,10 +144,13 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
           )}
         </section>
 
-        <aside className="grid content-start gap-6">
-          <CourseDetailsCard course={c} />
-          <MentorsCard course={c} />
-        </aside>
+        {/* Course settings and mentor assignment stay admin-only. */}
+        {!portal.isMentor && (
+          <aside className="grid content-start gap-6">
+            <CourseDetailsCard course={c} />
+            <MentorsCard course={c} />
+          </aside>
+        )}
       </div>
     </>
   );

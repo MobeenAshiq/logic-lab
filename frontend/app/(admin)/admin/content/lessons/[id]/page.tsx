@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useEditorPortal } from "@/components/admin/content/use-editor-portal";
 import { api } from "@/lib/api/client";
 import { applyFormErrors, toastError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
@@ -192,6 +193,7 @@ function LessonEditorForm({ lesson }: { lesson: AdminLesson }) {
 export default function LessonEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const portal = useEditorPortal();
   const lesson = useQuery({
     queryKey: ["admin", "lesson", id],
     queryFn: () => api<AdminLesson>(`/admin/content/lessons/${id}`),
@@ -220,7 +222,7 @@ export default function LessonEditorPage({ params }: { params: Promise<{ id: str
           <h2 className="text-base font-semibold">{t.teaching.quiz.title}</h2>
           <QuizBuilder
             lessonId={lesson.data.id}
-            bankHref={(c) => `/admin/content/courses/${c}/questions`}
+            bankHref={portal.bankHref}
           />
         </section>
       )}

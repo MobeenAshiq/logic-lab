@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { Course, Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { AuthUser } from '../auth/auth.types';
+import { ADMIN_ROLES, AuthUser } from '../auth/auth.types';
 import { AppException } from '../common/app-exception';
 import { uniqueSlug } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
@@ -203,6 +203,43 @@ export class CmsService {
       );
     });
     return this.listCourses({ trackId });
+  }
+
+  /**
+   * Admins may edit any course; mentors only courses they are assigned to.
+   * Pass exactly one of courseId, moduleId or lessonId.
+   */
+  async assertCanEdit(
+    auth: AuthUser,
+    ref: { courseId?: string; moduleId?: string; lessonId?: string },
+  ) {
+    if (ADMIN_ROLES.includes(auth.role)) return;
+    let courseId = ref.courseId;
+    if (ref.moduleId) {
+      const m = await this.prisma.module.findUnique({
+        where: { id: ref.moduleId },
+        select: { courseId: true },
+      });
+      if (!m) throw new AppException(HttpStatus.NOT_FOUND, 'MODULE_NOT_FOUND');
+      courseId = m.courseId;
+    }
+    if (ref.lessonId) {
+      const l = await this.prisma.lesson.findUnique({
+        where: { id: ref.lessonId },
+        select: { module: { select: { courseId: true } } },
+      });
+      if (!l) throw new AppException(HttpStatus.NOT_FOUND, 'LESSON_NOT_FOUND');
+      courseId = l.module.courseId;
+    }
+    const assigned =
+      auth.role === Role.mentor &&
+      courseId &&
+      (await this.prisma.courseMentor.findUnique({
+        where: { courseId_mentorId: { courseId, mentorId: auth.id } },
+      }));
+    if (!assigned) {
+      throw new AppException(HttpStatus.FORBIDDEN, 'NOT_COURSE_MENTOR');
+    }
   }
 
   // --- Mentors ---

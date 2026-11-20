@@ -40,6 +40,7 @@ import {
   newLessonSchema,
 } from "./schemas";
 import { DragHandle, SortableList } from "./sortable-list";
+import { useEditorPortal } from "./use-editor-portal";
 
 const s = t.adminContent;
 const NO_UNLOCK = "none";
@@ -188,6 +189,7 @@ export function ModuleCard({
 }) {
   const [editing, setEditing] = useState(false);
   const refresh = useCourseRefresh(module.courseId);
+  const { pages } = useEditorPortal();
 
   const patchModule = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -320,7 +322,7 @@ export function ModuleCard({
                   <DragHandle {...lessonHandle} />
                   <Icon className="text-muted-foreground size-4 shrink-0" />
                   <Link
-                    href={`/admin/content/lessons/${lesson.id}`}
+                    href={`${pages}/lessons/${lesson.id}`}
                     className="hover:text-primary min-w-0 flex-1 truncate text-sm"
                   >
                     {lesson.title}
@@ -337,7 +339,7 @@ export function ModuleCard({
                     }
                   />
                   <Button variant="ghost" size="icon-xs" asChild aria-label={s.lessons.edit}>
-                    <Link href={`/admin/content/lessons/${lesson.id}`}>
+                    <Link href={`${pages}/lessons/${lesson.id}`}>
                       <Pencil />
                     </Link>
                   </Button>

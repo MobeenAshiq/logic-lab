@@ -119,8 +119,13 @@ export class AdminContentController {
     return this.cms.createCourse(body);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Get('courses/:id')
-  getCourse(@Param('id', id()) courseId: string) {
+  async getCourse(
+    @CurrentUser() user: AuthUser,
+    @Param('id', id()) courseId: string,
+  ) {
+    await this.cms.assertCanEdit(user, { courseId });
     return this.cms.getCourse(courseId);
   }
 
@@ -160,70 +165,103 @@ export class AdminContentController {
 
   // --- Modules ---
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Post('courses/:id/modules')
-  createModule(
+  async createModule(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) courseId: string,
     @Body(new ZodValidationPipe(createModuleSchema)) body: CreateModuleInput,
   ) {
+    await this.cms.assertCanEdit(user, { courseId });
     return this.curriculum.createModule(courseId, body);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Put('courses/:id/modules/order')
-  reorderModules(
+  async reorderModules(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) courseId: string,
     @Body(new ZodValidationPipe(reorderSchema)) body: ReorderInput,
   ) {
+    await this.cms.assertCanEdit(user, { courseId });
     return this.curriculum.reorderModules(courseId, body.ids);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Patch('modules/:id')
-  updateModule(
+  async updateModule(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) moduleId: string,
     @Body(new ZodValidationPipe(updateModuleSchema)) body: UpdateModuleInput,
   ) {
+    await this.cms.assertCanEdit(user, { moduleId });
     return this.curriculum.updateModule(moduleId, body);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Delete('modules/:id')
-  deleteModule(@Param('id', id()) moduleId: string) {
+  async deleteModule(
+    @CurrentUser() user: AuthUser,
+    @Param('id', id()) moduleId: string,
+  ) {
+    await this.cms.assertCanEdit(user, { moduleId });
     return this.curriculum.deleteModule(moduleId);
   }
 
   // --- Lessons ---
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Post('modules/:id/lessons')
-  createLesson(
+  async createLesson(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) moduleId: string,
     @Body(new ZodValidationPipe(createLessonSchema)) body: CreateLessonInput,
   ) {
+    await this.cms.assertCanEdit(user, { moduleId });
     return this.curriculum.createLesson(moduleId, body);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Put('modules/:id/lessons/order')
-  reorderLessons(
+  async reorderLessons(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) moduleId: string,
     @Body(new ZodValidationPipe(reorderSchema)) body: ReorderInput,
   ) {
+    await this.cms.assertCanEdit(user, { moduleId });
     return this.curriculum.reorderLessons(moduleId, body.ids);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Get('lessons/:id')
-  getLesson(@Param('id', id()) lessonId: string) {
+  async getLesson(
+    @CurrentUser() user: AuthUser,
+    @Param('id', id()) lessonId: string,
+  ) {
+    await this.cms.assertCanEdit(user, { lessonId });
     return this.curriculum.getLesson(lessonId);
   }
 
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Patch('lessons/:id')
-  updateLesson(
+  async updateLesson(
+    @CurrentUser() user: AuthUser,
     @Param('id', id()) lessonId: string,
     @Body(new ZodValidationPipe(updateLessonSchema)) body: UpdateLessonInput,
   ) {
+    await this.cms.assertCanEdit(user, { lessonId });
     return this.curriculum.updateLesson(lessonId, body);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.admin, Role.super_admin, Role.mentor)
   @Delete('lessons/:id')
-  deleteLesson(@Param('id', id()) lessonId: string) {
+  async deleteLesson(
+    @CurrentUser() user: AuthUser,
+    @Param('id', id()) lessonId: string,
+  ) {
+    await this.cms.assertCanEdit(user, { lessonId });
     return this.curriculum.deleteLesson(lessonId);
   }
 

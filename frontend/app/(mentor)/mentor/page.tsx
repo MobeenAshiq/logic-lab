@@ -5,6 +5,7 @@ import {
   FileText,
   HelpCircle,
   Library,
+  Pencil,
   MessageSquare,
   NotebookPen,
   PlayCircle,
@@ -65,12 +66,20 @@ export default function MentorDashboard() {
                   {course.title} <PublishedBadge published={course.isPublished} />
                 </CardTitle>
                 <CardDescription>{course.trackTitle}</CardDescription>
-                <Link
-                  href={`/mentor/courses/${course.id}/questions`}
-                  className="text-primary inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
-                >
-                  <Library className="size-4" /> {t.teaching.nav.questionBank}
-                </Link>
+                <div className="flex flex-wrap gap-4">
+                  <Link
+                    href={`/mentor/content/courses/${course.id}`}
+                    className="text-primary inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
+                  >
+                    <Pencil className="size-4" /> Edit content
+                  </Link>
+                  <Link
+                    href={`/mentor/courses/${course.id}/questions`}
+                    className="text-primary inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline"
+                  >
+                    <Library className="size-4" /> {t.teaching.nav.questionBank}
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {course.modules.map((m) => (
