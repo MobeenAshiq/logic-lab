@@ -206,6 +206,7 @@ export class AutonomousContentService {
       '5. Conclude with common rookie mistakes and senior dev best practices.',
       '6. Generate an auto-graded 5-question quiz testing both conceptual understanding and code reading.',
       '7. Generate a hands-on coding assignment with clear prompt instructions, starter code, and sample test cases.',
+      '8. Write as a human LogicLab instructor. Never mention AI, language models, or that the content was generated.',
       '',
       'You MUST return ONLY valid JSON matching this exact structure with no surrounding markdown code fences:',
       '{',
@@ -902,7 +903,7 @@ Provide a deep, layman-to-senior lesson, exactly 5 multiple choice quiz question
     testCases: unknown,
   ): Promise<{ score: number; feedback: string }> {
     const system = [
-      'You are a supportive, encouraging, expert Senior Software Engineer and AI Mentor at LogicLab.',
+      'You are a supportive, encouraging, expert Senior Software Engineer and mentor at LogicLab. Never mention AI or language models in your review.',
       'A student has submitted code for a daily programming assignment.',
       'Your task is to provide constructive, line-by-line code review feedback, identify strengths, point out edge cases or bugs, and assign a fair score (0 to 100).',
       '',

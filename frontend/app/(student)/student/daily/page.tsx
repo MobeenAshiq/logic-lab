@@ -173,7 +173,7 @@ export default function StudentDailyPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-              <Sparkles className="size-3.5" /> Autonomous AI Curriculum
+              <Sparkles className="size-3.5" /> Daily Curriculum
             </span>
             {article && (
               <Badge variant="outline" className="capitalize text-xs">
@@ -223,7 +223,7 @@ export default function StudentDailyPage() {
       ) : !article ? (
         <Card className="text-center p-12">
           <Sparkles className="size-12 text-primary mx-auto mb-4" />
-          <h3 className="text-lg font-semibold">Your Mentor is Preparing the Next Mission</h3>
+          <h3 className="text-lg font-semibold">Today's Lesson Is Coming Soon</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">
             New lessons, quizzes, and coding challenges are published daily. Check back shortly or review earlier completed lessons.
           </p>
@@ -251,7 +251,7 @@ export default function StudentDailyPage() {
 
               <div className="mt-8 pt-6 border-t flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
-                  Finished reading? Test your understanding with today&apos;s auto-graded quiz.
+                  Finished reading? Test your understanding with today&apos;s quiz.
                 </div>
                 <Button onClick={() => setActiveTab("quiz")}>
                   Take Daily Quiz <ArrowRight className="ml-1.5 size-4" />
@@ -439,7 +439,7 @@ export default function StudentDailyPage() {
                     </div>
                   </Card>
 
-                  {/* AI Review Result Card */}
+                  {/* Review Result Card */}
                   {assignmentResult && (
                     <Card
                       className={`p-5 border ${
@@ -451,7 +451,7 @@ export default function StudentDailyPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Sparkles className="size-5 text-primary" />
-                          <h4 className="font-semibold text-sm">Senior AI Mentor Review</h4>
+                          <h4 className="font-semibold text-sm">Mentor Review</h4>
                         </div>
                         <Badge variant={assignmentResult.passed ? "default" : "secondary"}>
                           Score: {assignmentResult.score}/100
@@ -490,7 +490,7 @@ export default function StudentDailyPage() {
 
                   <div className="mt-4 pt-3 border-t flex items-center justify-between">
                     <p className="text-[11px] text-muted-foreground">
-                      Submitting triggers an automated line-by-line code review by your Senior AI Mentor.
+                      Your mentor will review your code line by line.
                     </p>
                     <Button
                       size="sm"

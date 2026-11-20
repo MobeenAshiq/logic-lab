@@ -12,6 +12,7 @@ export const en = {
       'Please verify your email before logging in. We can send you a new code.',
     EMAIL_TAKEN: 'An account with this email already exists. Please log in.',
     INVALID_CODE: 'The code is incorrect or has expired.',
+    WRONG_PASSWORD: 'Your current password is incorrect.',
     INVALID_RESET_TOKEN: 'This reset link is invalid or has expired.',
     ACCOUNT_BANNED: 'Your account has been suspended.',
     ACCOUNT_PENDING:
@@ -201,6 +202,7 @@ export const en = {
     RESET_SENT:
       'If an account exists for this email, a reset link has been sent.',
     PASSWORD_RESET: 'Your password has been changed. Please log in.',
+    PASSWORD_CHANGED: 'Your password has been changed.',
     LOGGED_OUT: 'You have been logged out.',
     SIGNUP_PENDING:
       'Account created. An admin will approve it soon, then you can log in.',

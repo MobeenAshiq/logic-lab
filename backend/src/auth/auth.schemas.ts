@@ -34,8 +34,14 @@ export const resetPasswordSchema = z.strictObject({
   password: passwordSchema,
 });
 
+export const changePasswordSchema = z.strictObject({
+  currentPassword: z.string().min(1).max(72),
+  newPassword: passwordSchema,
+});
+
 export const mfaCodeSchema = z.strictObject({ code: otpSchema });
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

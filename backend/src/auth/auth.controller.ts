@@ -17,6 +17,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Env } from '../config/env';
 import { RateLimit } from '../rate-limit/rate-limit.guard';
 import {
+  changePasswordSchema,
   emailOnlySchema,
   loginSchema,
   mfaCodeSchema,
@@ -24,6 +25,7 @@ import {
   signupSchema,
 } from './auth.schemas';
 import type {
+  ChangePasswordInput,
   LoginInput,
   ResetPasswordInput,
   SignupInput,
@@ -138,6 +140,18 @@ export class AuthController {
   ) {
     await this.auth.resetPassword(body);
     return { message: t.messages.PASSWORD_RESET };
+  }
+
+  @RateLimit('login')
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  async changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(changePasswordSchema))
+    body: ChangePasswordInput,
+  ) {
+    await this.auth.changePassword(user, body);
+    return { message: t.messages.PASSWORD_CHANGED };
   }
 
   // --- Google OAuth (browser redirects) ---
