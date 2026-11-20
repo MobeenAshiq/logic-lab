@@ -103,7 +103,8 @@ export class AutonomousContentService {
     const blueprint = getBlueprintForDay(dayIndex);
     const targetStack = input.targetStack || blueprint.targetStack;
     const topic = input.customTopic || blueprint.topic;
-    const moduleName = blueprint.moduleName;
+    // A custom topic replaces the planned one, so it also names the module.
+    const moduleName = input.customTopic || blueprint.moduleName;
 
     // Check if day already exists
     const existing = await this.prisma.dailyArticle.findFirst({
@@ -121,7 +122,7 @@ export class AutonomousContentService {
 
     // Ensure curriculum module exists
     let moduleRecord = await this.prisma.curriculumModule.findFirst({
-      where: { targetStack, dayNumber: dayIndex },
+      where: { targetStack, dayNumber: dayIndex, moduleName },
     });
 
     if (!moduleRecord) {

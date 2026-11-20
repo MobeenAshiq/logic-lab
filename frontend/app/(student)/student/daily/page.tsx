@@ -182,7 +182,8 @@ export default function StudentDailyPage() {
             )}
           </div>
           <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {article ? `Day ${article.dayIndex}: ${article.title}` : "Today's Daily Lesson"}
+            {/* Stored titles may already start with "Day N:" (backend fallback title). */}
+            {article ? `Day ${article.dayIndex}: ${article.title.replace(/^Day \d+:\s*/, "")}` : "Today's Daily Lesson"}
           </h1>
           {article && (
             <p className="text-muted-foreground mt-1 text-sm">

@@ -115,8 +115,10 @@ function Checkout({
 }) {
   // The plan picked on the pricing page (?plan=), if it is still on sale.
   const requested = billing.plans.find((p) => p.id === requestedPlanId)?.id;
+  // Default to a paid plan so students don't pick the Rs 0 plan by accident.
+  const defaultPlan = billing.plans.find((p) => p.pricePkr > 0) ?? billing.plans[0];
   const [planId, setPlanId] = useState<string | null>(
-    requested ?? billing.pendingSubscription?.plan?.id ?? billing.plans[0]?.id ?? null,
+    requested ?? billing.pendingSubscription?.plan?.id ?? defaultPlan?.id ?? null,
   );
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<string | null>(null);

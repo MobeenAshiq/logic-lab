@@ -84,7 +84,7 @@ export const SITE_CONTENT_DEFAULTS: SiteContent = {
       {
         question: 'How do I pay?',
         answer:
-          'Pay with EasyPaisa, JazzCash or bank transfer, then upload your payment slip. We verify it and activate your plan.',
+          'Pay with EasyPaisa or JazzCash, then upload your payment slip. We verify it and activate your plan.',
       },
       {
         question: 'Do I need any experience?',

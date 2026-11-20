@@ -8,7 +8,8 @@ const API_URL = process.env.API_URL ?? "http://localhost:4000";
  */
 export async function serverApi<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+    // Public data changes rarely; refetch at most once a minute (admin edits show within 60s).
+    const res = await fetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
     if (res.status === 404) return null;
     if (!res.ok) return null;
     return (await res.json()) as T;

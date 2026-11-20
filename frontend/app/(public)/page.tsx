@@ -552,9 +552,6 @@ export default async function LandingPage() {
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs font-medium text-muted-foreground">
             <span className="rounded-md border border-border bg-surface px-2.5 py-1">EasyPaisa</span>
             <span className="rounded-md border border-border bg-surface px-2.5 py-1">JazzCash</span>
-            <span className="rounded-md border border-border bg-surface px-2.5 py-1">
-              Direct Bank Transfer
-            </span>
           </div>
         </div>
       </section>

@@ -131,7 +131,7 @@ export const site = {
     seeAll: "See all plans",
     empty: "New season plans will be announced soon. Start your 7-day free trial today!",
     trialNote: "Every new account starts with a 7-day free trial on one track.",
-    methods: "Pay securely with EasyPaisa, JazzCash or direct bank transfer.",
+    methods: "Pay securely with EasyPaisa or JazzCash.",
   },
   faq: {
     title: "Frequently asked questions",
