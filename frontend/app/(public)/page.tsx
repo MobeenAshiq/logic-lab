@@ -1,33 +1,27 @@
 import {
   ArrowRight,
-  Award,
   Bot,
-  Brain,
-  CheckCircle2,
-  Clock,
+  BookOpen,
+  Check,
   Code2,
-  Flame,
-  HelpCircle,
-  MessageSquare,
-  PlayCircle,
+  MessageCircleQuestion,
+  MessagesSquare,
+  NotebookPen,
   Quote,
-  ShieldCheck,
   Sparkles,
   Trophy,
-  Users,
   Video,
 } from "lucide-react";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { LearnTabs } from "@/components/site/learn-tabs";
 import { PlanCard } from "@/components/site/plan-card";
-import { TrackCard } from "@/components/site/track-card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { TrackIcon } from "@/components/site/track-icon";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { serverApi } from "@/lib/api/server";
-import { BRAND, STOCK, TRACK_THEMES } from "@/lib/brand";
+import { BRAND } from "@/lib/brand";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PublicPlan, PublicTrack, SiteContent } from "@/types/api";
@@ -39,6 +33,42 @@ const bannerTone = {
   promo: "bg-primary text-primary-foreground",
   warning: "bg-warning/15 text-warning",
 } as const;
+
+/** What a free account unlocks: every item is a real feature in the student portal. */
+const UNLOCKS = [
+  "Progress tracking",
+  "Daily lessons",
+  "Daily coding challenges",
+  "Python notebook",
+  "Live classes",
+  "AI tutor",
+  "Mentor chat",
+  "Leaderboard & streaks",
+];
+
+const FEATURES = [
+  { icon: BookOpen, title: "Courses", body: "Step-by-step lessons, quizzes and assignments", href: "/student/courses", tint: "text-[#0F766E] dark:text-[#2DD4BF]" },
+  { icon: Sparkles, title: "Daily Lesson", body: "A new lesson and 5-question quiz every day", href: "/student/daily", tint: "text-[#7C3AED] dark:text-[#A78BFA]" },
+  { icon: Code2, title: "Daily Challenges", body: "One coding problem a day, auto-checked", href: "/student/challenges", tint: "text-[#2563EB] dark:text-[#60A5FA]" },
+  { icon: NotebookPen, title: "Python Notebook", body: "Write and run Python in your browser", href: "/student/notebook", tint: "text-[#CA8A04] dark:text-[#FACC15]" },
+  { icon: Video, title: "Live Classes", body: "Learn live and ask questions as you go", href: "/student/live", tint: "text-[#DC2626] dark:text-[#F87171]" },
+  { icon: Bot, title: "AI Tutor", body: "Hints and error explanations, any time", href: "/student/mentor", tint: "text-[#0891B2] dark:text-[#22D3EE]" },
+  { icon: MessageCircleQuestion, title: "Mentor Chat", body: "Ask your doubts to real mentors", href: "/student/doubts", tint: "text-[#DB2777] dark:text-[#F472B6]" },
+  { icon: MessagesSquare, title: "Community", body: "Ask, answer and learn with other students", href: "/community", tint: "text-[#16A34A] dark:text-[#4ADE80]" },
+  { icon: Trophy, title: "Leaderboard", body: "Earn points and climb the weekly ranks", href: "/leaderboard", tint: "text-[#D97706] dark:text-[#FBBF24]" },
+];
+
+/** Quick links under the header, like a topic bar. */
+const TOPICS = [
+  { label: "Courses", href: "/courses" },
+  { label: "Logic Building", href: "/courses" },
+  { label: "Python", href: "/courses" },
+  { label: "JavaScript", href: "/courses" },
+  { label: "C++", href: "/courses" },
+  { label: "Community", href: "/community" },
+  { label: "Leaderboard", href: "/leaderboard" },
+  { label: "Pricing", href: "/pricing" },
+];
 
 export default async function LandingPage() {
   const jar = await cookies();
@@ -60,455 +90,245 @@ export default async function LandingPage() {
   const faq = content?.faq ?? { items: [] };
   const testimonials = content?.testimonials ?? { items: [] };
   const banners = content?.banners ?? { items: [] };
+  const startHref = isLoggedIn ? "/student" : hero.ctaHref || "/signup";
+  const startText = isLoggedIn ? "Go to Dashboard" : hero.ctaText || t.site.hero.primaryCta;
+  const featureHref = (href: string) =>
+    isLoggedIn || !href.startsWith("/student") ? href : "/signup";
 
   return (
     <>
-      {/* 1. Announcement Banners */}
       {banners.items
-        ?.filter((b) => b.active)
-        .map((b) => (
-          <div
-            key={b.id}
-            className={cn("px-4 py-2 text-center text-sm font-medium", bannerTone[b.variant])}
-          >
-            {b.href ? (
-              <Link href={b.href} className="underline-offset-4 hover:underline">
-                {b.text}
+        ?.filter((x) => x.active)
+        .map((x) => (
+          <div key={x.id} className={cn("px-4 py-2 text-center text-sm font-medium", bannerTone[x.variant])}>
+            {x.href ? (
+              <Link href={x.href} className="underline-offset-4 hover:underline">
+                {x.text}
               </Link>
             ) : (
-              b.text
+              x.text
             )}
           </div>
         ))}
 
-      {/* 2. Hero Section */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-surface/50 to-background py-16 sm:py-24">
-        {/* Subtle background glow */}
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(45%_45%_at_25%_10%,color-mix(in_srgb,var(--primary)_12%,transparent),transparent),radial-gradient(40%_40%_at_85%_25%,color-mix(in_srgb,var(--accent)_10%,transparent),transparent)]" />
+      {/* Topic bar */}
+      <nav aria-label="Topics" className="overflow-x-auto bg-[#1E293B]">
+        <ul className="mx-auto flex max-w-6xl gap-1 px-4">
+          {TOPICS.map((topic) => (
+            <li key={topic.label}>
+              <Link
+                href={topic.href}
+                className="block px-3 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap text-slate-200 uppercase hover:bg-[#0F766E] hover:text-white"
+              >
+                {topic.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 lg:grid-cols-12">
-          {/* Left Hero Content */}
-          <div className="text-center lg:col-span-7 lg:text-left">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary dark:bg-primary/20">
-              <Sparkles className="size-3.5" />
-              {t.site.hero.badge}
-            </span>
-
-            <h1 className="font-heading text-foreground mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[56px] lg:leading-[1.12]">
-              {hero.title ? (
-                hero.title
-              ) : (
-                <>
-                  Logic Building, Web Dev &amp; AI{" "}
-                  <span className="text-emerald-600 dark:text-emerald-400">Dashboard</span>
-                </>
-              )}
+      {/* Hero */}
+      <section className="bg-[#0F172A] px-4 py-16 text-white sm:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.2fr_1fr]">
+          <div>
+            <h1 className="font-heading text-4xl font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+              {hero.title || t.site.hero.headline}
             </h1>
+            <p className="mt-4 text-lg text-slate-300">{hero.subtitle}</p>
+            <p className="mt-2 text-lg font-bold text-[#FACC15]">{t.site.hero.badge}</p>
 
-            <p className="text-muted-foreground mt-5 max-w-xl text-base leading-relaxed sm:text-lg lg:mx-0">
-              {hero.subtitle}
-            </p>
-
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-              <Button size="lg" asChild className="h-11 px-6 font-semibold shadow-md">
-                <Link href={isLoggedIn ? "/student" : (hero.ctaHref || "/signup")}>
-                  {isLoggedIn ? "Go to Dashboard" : (hero.ctaText || t.site.hero.primaryCta)}{" "}
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="secondary" asChild className="h-11 px-6 font-semibold">
-                <Link href="/courses">{t.site.hero.secondaryCta}</Link>
-              </Button>
-            </div>
-
-            {/* Quick Hero Stat Tickers */}
-            <dl className="border-border/60 mx-auto mt-10 grid max-w-md grid-cols-3 gap-4 border-t pt-6 text-left lg:mx-0">
-              {t.site.hero.stats.map((stat) => (
-                <div key={stat.label}>
-                  <dd className="font-heading text-foreground text-2xl font-bold tracking-tight">
-                    {stat.value}
-                  </dd>
-                  <dt className="text-muted-foreground text-xs font-medium">{stat.label}</dt>
-                </div>
+            <p className="mt-8 text-sm font-semibold text-slate-300">A free account unlocks:</p>
+            <ul className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+              {UNLOCKS.map((item) => (
+                <li key={item} className="flex items-center gap-2 text-slate-100">
+                  <Check className="size-4 shrink-0 text-[#2DD4BF]" /> {item}
+                </li>
               ))}
-            </dl>
+            </ul>
+            {!isLoggedIn && (
+              <p className="mt-6 text-sm text-slate-400">
+                Already a member?{" "}
+                <Link href="/login" className="font-semibold text-[#2DD4BF] hover:underline">
+                  Log in
+                </Link>
+              </p>
+            )}
           </div>
 
-          {/* Right Hero Visual: Interactive Student Dashboard Mockup Preview */}
-          <div className="relative mx-auto w-full max-w-md lg:col-span-5 lg:max-w-none">
-            <Link
-              href={isLoggedIn ? "/student" : "/courses"}
-              className="group block"
+          {/* Sign-up card */}
+          <div className="rounded-[6px] border border-white/10 bg-[#1E293B] p-6 shadow-2xl sm:p-8">
+            <div className="flex items-center gap-4">
+              <span className="grid size-16 place-items-center rounded-full bg-white">
+                <Image src={BRAND.mark} alt="" width={30} height={48} className="h-10 w-auto" />
+              </span>
+              <div>
+                <p className="font-heading text-xl font-bold">{BRAND.name}</p>
+                <p className="text-sm text-slate-400">{BRAND.tagline}</p>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-2 text-center">
+              {t.site.hero.stats.map((s) => (
+                <div key={s.label} className="rounded-[4px] bg-white/5 px-2 py-3">
+                  <p className="font-heading text-lg font-extrabold">{s.value}</p>
+                  <p className="text-[11px] text-slate-400">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <Button
+              asChild
+              size="lg"
+              className="mt-6 w-full bg-[#2DD4BF] font-bold text-[#0B1220] hover:bg-[#5EEAD4]"
             >
-              <div className="card-hover border-border bg-card relative overflow-hidden rounded-2xl border p-5 shadow-xl transition-all group-hover:border-primary/50">
-                {/* Top window bar */}
-                <div className="flex items-center justify-between border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full bg-danger/80" />
-                    <span className="size-2.5 rounded-full bg-warning/80" />
-                    <span className="size-2.5 rounded-full bg-success/80" />
-                    <span className="text-muted-foreground ml-2 text-xs font-mono font-medium">
-                      logiclab.pk/student
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                      {isLoggedIn ? "Your Dashboard" : "Dashboard Preview"}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
-                      <Flame className="size-3 fill-current" /> 3-day streak
-                    </span>
-                  </div>
-                </div>
+              <Link href={startHref}>
+                {startText} <ArrowRight />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="mt-3 w-full border-white/20 bg-transparent font-semibold text-white hover:bg-white/10 hover:text-white"
+            >
+              <Link href="/courses">{t.site.hero.secondaryCta}</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
 
-                {/* Greeting */}
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                  <h4 className="font-heading text-base font-bold text-foreground">
-                    {isLoggedIn ? "Welcome back! 👋" : "Ready to start learning?"}
-                  </h4>
-                  <p className="text-muted-foreground text-xs">
-                    {isLoggedIn ? "Continue your lessons and track your progress." : "Create an account to access lessons, assignments, and mentor support."}
-                  </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                    <Trophy className="size-3.5" /> 450 pts
-                  </span>
-                </div>
-
-                {/* Active Course Progress Card */}
-                <div className="bg-surface border-border mt-4 rounded-xl border p-3.5">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center rounded-full bg-[#7C3AED]/10 px-2 py-0.5 text-[11px] font-semibold text-[#7C3AED]">
-                      Logic Building
-                    </span>
-                    <span className="text-muted-foreground text-xs font-medium">Lesson 4 of 12</span>
-                  </div>
-                  <h5 className="font-heading text-foreground mt-2 text-sm font-bold">
-                    Problem Solving &amp; Flowcharts
-                  </h5>
-                  <div className="mt-3 flex items-center justify-between text-xs font-semibold">
-                    <span className="text-muted-foreground font-normal">Progress</span>
-                    <span className="text-primary font-bold">65%</span>
-                  </div>
-                  <div className="bg-muted mt-1.5 h-1.5 w-full overflow-hidden rounded-full">
-                    <div className="bg-primary h-full w-[65%] rounded-full" />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-muted-foreground text-[11px]">Mentor: Bilal Ahmed</span>
-                    <span className="text-primary text-xs font-semibold hover:underline flex items-center gap-1">
-                      {isLoggedIn ? "Go to Course" : "Resume"} <ArrowRight className="size-3" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Live Class Reminder */}
-                <div className="border-border/80 bg-primary/5 mt-3 flex items-center justify-between rounded-xl border p-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-                      <Video className="size-4" />
-                    </span>
-                    <div>
-                      <p className="font-heading text-foreground text-xs font-bold">
-                        Live Q&amp;A Office Hours
-                      </p>
-                      <p className="text-muted-foreground text-[11px]">Today at 7:00 PM PKT</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
-                    Upcoming
-                  </Badge>
-                </div>
-
-                {/* Verified Feedback Badge */}
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground border border-border/50">
-                  <ShieldCheck className="size-4 text-success shrink-0" />
-                  <span className="truncate">
-                    Assignment graded by Mentor Hamza · <strong>95/100</strong>
-                  </span>
+      {/* Tracks */}
+      <section className="px-4 py-16" id="tracks">
+        <div className="mx-auto grid max-w-6xl gap-6">
+          {(tracks ?? []).map((track) => (
+            <div
+              key={track.id}
+              className="grid items-center gap-8 rounded-[6px] bg-gradient-to-br from-[#E0F2FE] to-[#CCFBF1] p-8 sm:p-10 md:grid-cols-[1fr_auto] dark:from-[#0C2A3A] dark:to-[#0D2E2B]"
+            >
+              <div>
+                <p className="text-xs font-bold tracking-[0.18em] text-[#0F766E] uppercase dark:text-[#2DD4BF]">
+                  Track · {t.site.tracks.courses(track._count.courses)}
+                </p>
+                <h2 className="font-heading mt-2 text-3xl font-extrabold tracking-tight text-[#0B1220] sm:text-4xl dark:text-white">
+                  {track.title}
+                </h2>
+                <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-700 dark:text-slate-300">
+                  {track.description}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button asChild className="bg-[#0B1220] font-bold text-white hover:bg-[#1E293B] dark:bg-white dark:text-[#0B1220]">
+                    <Link href={startHref}>Start this track</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="border-[#0B1220]/20 bg-white/70 font-semibold text-[#0B1220] dark:border-white/20 dark:bg-transparent dark:text-white">
+                    <Link href={`/courses?track=${track.slug}`}>View courses</Link>
+                  </Button>
                 </div>
               </div>
+              <span className="mx-auto grid size-32 place-items-center rounded-[6px] bg-white text-[#0F766E] shadow-lg sm:size-40 dark:bg-[#0B1220] dark:text-[#2DD4BF]">
+                <TrackIcon name={track.icon} className="size-16 sm:size-20" />
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* What do you want to learn? */}
+      <section className="bg-surface px-4 py-20">
+        <SectionTitle
+          eyebrow="Learn by doing"
+          title="What do you want to learn?"
+          subtitle="Pick a language and see what a lesson looks like. Every lesson comes with examples you can run yourself."
+        />
+        <div className="mt-10">
+          <LearnTabs startHref={startHref} />
+        </div>
+      </section>
+
+      {/* Everything on LogicLab */}
+      <section className="px-4 py-20">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="font-heading text-foreground text-xl font-bold">Everything on LogicLab</h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map((f) => (
+              <Link
+                key={f.title}
+                href={featureHref(f.href)}
+                className="group flex flex-col items-center rounded-[6px] border border-border bg-card p-6 text-center transition-colors hover:border-primary/60 hover:shadow-md"
+              >
+                <f.icon className={cn("size-9", f.tint)} />
+                <span className="font-heading text-foreground mt-3 font-bold">{f.title}</span>
+                <span className="text-muted-foreground mt-1 text-xs leading-relaxed">{f.body}</span>
+              </Link>
+            ))}
+            <Link
+              href="/courses"
+              className="flex items-center gap-4 rounded-[6px] border border-dashed border-border p-6 hover:border-primary/60"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                <ArrowRight className="size-5" />
+              </span>
+              <span>
+                <span className="font-heading text-foreground block font-bold">Browse all courses</span>
+                <span className="text-muted-foreground text-xs">See every track and course</span>
+              </span>
             </Link>
           </div>
         </div>
-
-        {/* Geometric faceted polygon accents matching the screenshot */}
-        <div className="pointer-events-none absolute -right-4 -bottom-8 -z-10 w-96 overflow-hidden opacity-90 hidden xl:block">
-          <svg
-            viewBox="0 0 400 400"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-full w-full"
-            aria-hidden="true"
-          >
-            <path
-              d="M400 100L260 240L400 380V100Z"
-              fill="#0F172A"
-              fillOpacity="0.05"
-            />
-            <path
-              d="M400 220L310 310L400 400V220Z"
-              fill="#0F172A"
-              fillOpacity="0.1"
-            />
-            <path
-              d="M400 280L340 340L400 400V280Z"
-              fill="#10B981"
-              fillOpacity="0.8"
-            />
-            <path
-              d="M400 350L370 380L400 400V350Z"
-              fill="#34D399"
-            />
-          </svg>
-        </div>
       </section>
 
-      {/* 3. Trust Bar */}
-      <section className="border-b border-border bg-surface py-5">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-around gap-6 px-4 text-center">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Users className="size-4 text-primary" />
-            <span>{t.site.trustBar.students}</span>
-          </div>
-          <span className="text-border hidden sm:inline">|</span>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <PlayCircle className="size-4 text-primary" />
-            <span>{t.site.trustBar.lessons}</span>
-          </div>
-          <span className="text-border hidden sm:inline">|</span>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Award className="size-4 text-primary" />
-            <span>{t.site.trustBar.mentors}</span>
-          </div>
-          <span className="text-border hidden sm:inline">|</span>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Sparkles className="size-4 text-accent" />
-            <span>{t.site.trustBar.rating}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Three Tracks Section */}
-      <section className="mx-auto max-w-6xl px-4 py-20" id="tracks">
-        <SectionTitle title={t.site.tracks.title} subtitle={t.site.tracks.subtitle} />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {(tracks ?? []).map((track) => (
-            <TrackCard key={track.id} track={track} />
-          ))}
-        </div>
-      </section>
-
-      {/* 5. How It Works (4 Steps) */}
-      <section className="border-y border-border bg-surface/40 py-20">
-        <div className="mx-auto max-w-6xl px-4">
-          <SectionTitle title={t.site.how.title} subtitle={t.site.how.subtitle} />
-          <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {t.site.how.steps.map((step, i) => (
-              <li
-                key={step.title}
-                className="card-hover border-border bg-card relative flex flex-col rounded-xl border p-6 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="bg-primary text-primary-foreground font-heading grid size-9 place-items-center rounded-lg text-sm font-bold shadow-sm">
-                    0{i + 1}
-                  </span>
-                  <span className="text-border font-mono text-xs font-semibold">STEP</span>
-                </div>
-                <h3 className="font-heading text-foreground mt-5 text-lg font-bold">{step.title}</h3>
-                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{step.body}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* 6. Features Grid */}
-      <section className="mx-auto max-w-6xl px-4 py-20">
-        <SectionTitle title={t.site.features.title} subtitle={t.site.features.subtitle} />
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {t.site.features.items.map((feat) => {
-            const icons = {
-              video: Video,
-              play: PlayCircle,
-              check: CheckCircle2,
-              message: MessageSquare,
-              sparkles: Bot,
-              users: Users,
-            };
-            const Icon = icons[feat.icon as keyof typeof icons] || Code2;
-            return (
-              <div
-                key={feat.title}
-                className="card-hover border-border bg-card flex flex-col rounded-xl border p-6 shadow-sm"
-              >
-                <div className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary dark:bg-primary/20">
-                  <Icon className="size-5" />
-                </div>
-                <h3 className="font-heading text-foreground mt-4 text-lg font-bold">
-                  {feat.title}
-                </h3>
-                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                  {feat.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 7. Leaderboard & Rewards Preview */}
-      <section className="border-y border-border bg-surface/50 py-20">
-        <div className="mx-auto max-w-6xl px-4">
-          <SectionTitle
-            title={t.site.leaderboard.title}
-            subtitle={t.site.leaderboard.subtitle}
-          />
-          <div className="mt-12 grid gap-8 lg:grid-cols-12 items-center">
-            {/* Left explanation */}
-            <div className="lg:col-span-5 space-y-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
-                <Trophy className="size-3.5 fill-current" /> Monthly Season Awards
-              </span>
-              <h3 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Compete, learn consistently, and earn cash rewards
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t.site.leaderboard.monthlyPrizes}
+      {/* Save your progress */}
+      {!isLoggedIn && (
+        <section className="px-4 pb-20">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 rounded-[6px] bg-[#ECFDF5] p-8 sm:p-12 lg:grid-cols-[1.3fr_1fr] dark:bg-[#0D2E2B]">
+            <div>
+              <p className="text-xs font-bold tracking-[0.18em] text-[#0F766E] uppercase dark:text-[#2DD4BF]">
+                Free account
               </p>
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <CheckCircle2 className="size-4 text-success" />
-                  <span>Points earned from lessons, assignments, and speed</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <CheckCircle2 className="size-4 text-success" />
-                  <span>Maintained streaks multiply your season ranking score</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <CheckCircle2 className="size-4 text-success" />
-                  <span>Fair play verified with typing integrity detection</span>
-                </div>
-              </div>
+              <h2 className="font-heading mt-2 text-3xl font-extrabold tracking-tight text-[#0B1220] sm:text-4xl dark:text-white">
+                Save your progress. Everywhere.
+              </h2>
+              <p className="mt-3 max-w-lg text-base text-slate-700 dark:text-slate-300">
+                Create an account to keep your lessons, points and streaks, and pick up where you left off on any device.
+              </p>
+              <ul className="mt-6 grid gap-2 text-sm sm:grid-cols-2">
+                {UNLOCKS.map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-[#0B1220] dark:text-slate-100">
+                    <Check className="size-4 shrink-0 text-[#0F766E] dark:text-[#2DD4BF]" /> {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {/* Right: Podium cards */}
-            <div className="lg:col-span-7 grid gap-4 sm:grid-cols-3">
-              {[
-                {
-                  rank: "1st",
-                  name: "Zainab Fatima",
-                  track: "Logic Building",
-                  points: "1,840 pts",
-                  streak: "18 days",
-                  medal: "🥇",
-                  reward: "PKR 25,000",
-                },
-                {
-                  rank: "2nd",
-                  name: "Muhammad Usman",
-                  track: "Web Development",
-                  points: "1,620 pts",
-                  streak: "14 days",
-                  medal: "🥈",
-                  reward: "PKR 15,000",
-                },
-                {
-                  rank: "3rd",
-                  name: "Saad Sheikh",
-                  track: "AI & Data Science",
-                  points: "1,490 pts",
-                  streak: "12 days",
-                  medal: "🥉",
-                  reward: "PKR 10,000",
-                },
-              ].map((winner) => (
-                <div
-                  key={winner.rank}
-                  className="card-hover border-border bg-card relative flex flex-col items-center rounded-xl border p-5 text-center shadow-sm"
-                >
-                  <span className="text-3xl">{winner.medal}</span>
-                  <span className="font-heading text-foreground mt-2 text-base font-bold">
-                    {winner.name}
-                  </span>
-                  <span className="text-muted-foreground text-xs">{winner.track}</span>
-                  <div className="bg-surface border-border my-3 w-full rounded-lg border p-2 text-xs">
-                    <p className="font-heading font-bold text-primary">{winner.points}</p>
-                    <p className="text-muted-foreground text-[11px]">🔥 {winner.streak}</p>
-                  </div>
-                  <span className="font-heading text-accent text-xs font-bold">
-                    Prize: {winner.reward}
-                  </span>
-                </div>
-              ))}
+            <div className="rounded-[6px] bg-card p-8 text-center shadow-lg">
+              <p className="font-heading text-foreground text-lg font-bold">Start in one click</p>
+              <p className="text-muted-foreground mt-1 text-sm">{t.site.hero.badge}</p>
+              <Button asChild size="lg" className="mt-6 w-full font-bold">
+                <Link href="/signup">{t.site.hero.primaryCta}</Link>
+              </Button>
+              <p className="text-muted-foreground my-3 text-xs">or</p>
+              <Button asChild size="lg" variant="outline" className="w-full font-semibold">
+                <Link href="/login">Log in</Link>
+              </Button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* 8. Mentors Section */}
-      <section className="mx-auto max-w-6xl px-4 py-20" id="mentors">
-        <SectionTitle title={t.site.mentors.title} subtitle={t.site.mentors.subtitle} />
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {t.site.mentors.featured.map((m) => (
-            <div
-              key={m.name}
-              className="card-hover border-border bg-card flex flex-col rounded-xl border p-6 shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="size-12 border border-border">
-                  <AvatarFallback className="bg-primary/10 text-primary font-heading text-sm font-bold">
-                    {m.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h4 className="font-heading text-foreground text-base font-bold">{m.name}</h4>
-                  <p className="text-muted-foreground text-xs">{m.role}</p>
-                </div>
-              </div>
-              <p className="text-muted-foreground mt-4 text-xs leading-relaxed">
-                Expertise: <strong className="text-foreground">{m.expertise}</strong>
-              </p>
-              <div className="border-border mt-5 flex items-center justify-between border-t pt-3 text-xs">
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                  {m.track}
-                </span>
-                <span className="font-semibold text-accent flex items-center gap-1">
-                  ★ {m.rating}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 9. Testimonials Section */}
+      {/* Testimonials (Admin › Landing page) */}
       {testimonials.items.length > 0 && (
-        <section className="border-y border-border bg-surface/30 py-20">
-          <div className="mx-auto max-w-6xl px-4">
+        <section className="bg-surface px-4 py-20">
+          <div className="mx-auto max-w-6xl">
             <SectionTitle title={t.site.testimonials.title} />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {testimonials.items.map((item) => (
-                <figure
-                  key={item.name + item.quote}
-                  className="card-hover border-border bg-card rounded-xl border p-6 shadow-sm flex flex-col justify-between"
-                >
-                  <div>
-                    <Quote className="text-primary size-6 opacity-60" />
-                    <blockquote className="mt-3 text-sm leading-relaxed text-foreground">
-                      &ldquo;{item.quote}&rdquo;
-                    </blockquote>
-                  </div>
+                <figure key={item.name + item.quote} className="rounded-[6px] border border-border bg-card p-6">
+                  <Quote className="size-6 text-primary opacity-60" />
+                  <blockquote className="mt-3 text-sm leading-relaxed text-foreground">&ldquo;{item.quote}&rdquo;</blockquote>
                   <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-4">
                     <Avatar className="size-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
                         {item.name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="text-xs">
-                      <span className="font-heading font-semibold text-foreground block">
-                        {item.name}
-                      </span>
+                      <span className="font-heading block font-semibold text-foreground">{item.name}</span>
                       {item.role && <span className="text-muted-foreground">{item.role}</span>}
                     </div>
                   </figcaption>
@@ -519,60 +339,40 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* 10. Pricing Preview Section */}
-      <section className="mx-auto max-w-6xl px-4 py-20" id="pricing">
-        <SectionTitle title={t.site.pricing.title} subtitle={t.site.pricing.subtitle} />
-
-        {plans && plans.length > 0 ? (
-          <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-3">
-            {plans.slice(0, 3).map((plan, i) => (
-              <PlanCard key={plan.id} plan={plan} highlight={i === Math.min(1, plans.length - 1)} />
-            ))}
-          </div>
-        ) : (
-          <div className="mx-auto mt-10 max-w-md rounded-xl border border-dashed border-border p-8 text-center bg-surface/50">
-            <Sparkles className="mx-auto size-8 text-primary" />
-            <h4 className="font-heading mt-3 text-base font-bold text-foreground">
-              Season Enrollment Opening Soon
-            </h4>
-            <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-              {t.site.pricing.empty}
-            </p>
-            <Button asChild className="mt-5 font-semibold">
-              <Link href={isLoggedIn ? "/student" : "/signup"}>
-                {isLoggedIn ? "Go to Dashboard" : "Start 7-Day Free Trial"}
-              </Link>
-            </Button>
-          </div>
-        )}
-
-        {/* Payment logos and notes */}
-        <div className="mt-10 text-center">
-          <p className="text-muted-foreground text-sm">{t.site.pricing.trialNote}</p>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs font-medium text-muted-foreground">
-            <span className="rounded-md border border-border bg-surface px-2.5 py-1">EasyPaisa</span>
-            <span className="rounded-md border border-border bg-surface px-2.5 py-1">JazzCash</span>
+      {/* Pricing */}
+      <section className="border-t border-border bg-surface px-4 py-20" id="pricing">
+        <div className="mx-auto max-w-6xl">
+          <SectionTitle eyebrow="Pricing" title={t.site.pricing.title} subtitle={t.site.pricing.subtitle} />
+          {plans && plans.length > 0 && (
+            <div className="mx-auto mt-12 grid justify-center gap-6 [grid-template-columns:repeat(auto-fit,minmax(0,20rem))]">
+              {plans.slice(0, 3).map((plan, i) => (
+                <PlanCard key={plan.id} plan={plan} highlight={i === Math.min(1, plans.length - 1)} />
+              ))}
+            </div>
+          )}
+          <div className="mt-10 text-center">
+            <p className="text-muted-foreground text-sm">{t.site.pricing.trialNote}</p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold">
+              <span className="rounded-[4px] bg-[#16A34A]/10 px-3 py-1 text-[#15803D] dark:text-[#4ADE80]">EasyPaisa</span>
+              <span className="rounded-[4px] bg-[#DC2626]/10 px-3 py-1 text-[#B91C1C] dark:text-[#F87171]">JazzCash</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 11. FAQ Accordion */}
+      {/* FAQ (Admin › Landing page) */}
       {faq.items.length > 0 && (
-        <section className="border-t border-border bg-surface/40 py-20" id="faq">
-          <div className="mx-auto max-w-3xl px-4">
-            <SectionTitle title={t.site.faq.title} subtitle={t.site.faq.subtitle} />
-            <div className="mt-10 divide-y divide-border rounded-xl border border-border bg-card shadow-sm">
+        <section className="px-4 py-20" id="faq">
+          <div className="mx-auto max-w-3xl">
+            <SectionTitle eyebrow="FAQ" title={t.site.faq.title} subtitle={t.site.faq.subtitle} />
+            <div className="mt-10 divide-y divide-border rounded-[6px] border border-border bg-card">
               {faq.items.map((item) => (
-                <details key={item.question} className="group px-6 py-4.5">
+                <details key={item.question} className="group px-6 py-4">
                   <summary className="font-heading flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-foreground">
                     {item.question}
-                    <span className="text-muted-foreground font-mono text-lg transition-transform duration-200 group-open:rotate-45">
-                      +
-                    </span>
+                    <span className="text-primary text-xl transition-transform duration-200 group-open:rotate-45">+</span>
                   </summary>
-                  <p className="text-muted-foreground mt-3 text-sm leading-relaxed whitespace-pre-line">
-                    {item.answer}
-                  </p>
+                  <p className="text-muted-foreground mt-3 text-sm leading-relaxed whitespace-pre-line">{item.answer}</p>
                 </details>
               ))}
             </div>
@@ -580,51 +380,30 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* 12. Final Call to Action */}
-      <section className="px-4 py-20">
-        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 px-6 py-14 text-center text-primary-foreground shadow-xl">
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent)]" />
-          <h2 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {t.site.cta.title}
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-base opacity-90 leading-relaxed">
-            {t.site.cta.body}
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              variant="secondary"
-              asChild
-              className="h-11 px-7 font-bold text-foreground shadow-sm"
-            >
-              <Link href={isLoggedIn ? "/student" : "/signup"}>
-                {isLoggedIn ? "Go to Dashboard" : t.common.nav.startTrial}
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-white/10 h-11 px-6 font-semibold"
-            >
-              <Link href="/courses">Browse courses</Link>
-            </Button>
-          </div>
-        </div>
+      {/* Final call to action */}
+      <section className="bg-[#0F172A] px-4 py-16 text-center text-white">
+        <h2 className="font-heading mx-auto max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">
+          {t.site.cta.title}
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-slate-300">{t.site.cta.body}</p>
+        <Button asChild size="lg" className="mt-8 bg-[#2DD4BF] px-10 font-bold text-[#0B1220] hover:bg-[#5EEAD4]">
+          <Link href={startHref}>
+            {isLoggedIn ? "Go to Dashboard" : t.common.nav.startTrial} <ArrowRight />
+          </Link>
+        </Button>
       </section>
     </>
   );
 }
 
-function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+function SectionTitle({ eyebrow, title, subtitle }: { eyebrow?: string; title: string; subtitle?: string }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <h2 className="font-heading text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
+      {eyebrow && <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">{eyebrow}</p>}
+      <h2 className="font-heading text-foreground mt-2 text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">
         {title}
       </h2>
-      {subtitle && (
-        <p className="text-muted-foreground mt-3 text-base leading-relaxed">{subtitle}</p>
-      )}
+      {subtitle && <p className="text-muted-foreground mt-3 text-base leading-relaxed">{subtitle}</p>}
     </div>
   );
 }

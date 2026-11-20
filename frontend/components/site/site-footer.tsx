@@ -102,7 +102,7 @@ export function SiteFooter() {
             </li>
             <li>
               <span className="text-muted-foreground/60 text-xs cursor-default">
-                EasyPaisa · JazzCash · Bank
+                EasyPaisa · JazzCash
               </span>
             </li>
             <li>

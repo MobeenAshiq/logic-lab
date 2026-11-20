@@ -22,30 +22,35 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLogout, useMe } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { isActive, NAV, type Portal } from "./nav";
+import { isActive, NAV, type NavItem, type Portal, SHARED_NAV } from "./nav";
 
 function NavLinks({ portal, onNavigate }: { portal: Portal; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const link = (item: NavItem) => {
+    const active = isActive(item, pathname);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2.5 rounded-[4px] px-3 py-2 text-sm font-medium transition-colors",
+          active && "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
+        )}
+      >
+        <item.icon className="size-4" />
+        {item.label}
+      </Link>
+    );
+  };
   return (
     <nav className="grid gap-1">
-      {NAV[portal].map((item) => {
-        const active = isActive(item, pathname);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active && "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
-            )}
-          >
-            <item.icon className="size-4" />
-            {item.label}
-          </Link>
-        );
-      })}
+      {NAV[portal].map(link)}
+      <p className="text-muted-foreground mt-4 border-t px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wider uppercase">
+        Shared
+      </p>
+      {SHARED_NAV.map(link)}
     </nav>
   );
 }
@@ -96,7 +101,7 @@ function LogoutLink() {
       type="button"
       onClick={() => logout.mutate()}
       disabled={logout.isPending}
-      className="text-muted-foreground hover:bg-muted hover:text-foreground mt-auto flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground mt-auto flex items-center gap-2.5 rounded-[4px] px-3 py-2 text-sm font-medium transition-colors"
     >
       <LogOut className="size-4" /> {t.common.actions.logout}
     </button>

@@ -44,8 +44,6 @@ export const NAV: Record<Portal, NavItem[]> = {
     { href: "/student/challenges", label: "Daily challenges", icon: Code2 },
     { href: "/student/notebook", label: "Python notebook", icon: BookOpen },
     { href: "/student/doubts", label: t.realtime.chat.nav, icon: MessageCircleQuestion },
-    { href: "/community", label: t.community.nav, icon: MessagesSquare },
-    { href: "/leaderboard", label: t.realtime.leaderboard.nav, icon: Trophy },
     { href: "/student/billing", label: t.common.nav.billing, icon: CreditCard },
     { href: "/student/profile", label: "Profile", icon: UserRound },
   ],
@@ -55,8 +53,6 @@ export const NAV: Record<Portal, NavItem[]> = {
     { href: "/mentor/doubts", label: t.realtime.chat.nav, icon: MessageCircleQuestion },
     { href: "/mentor/office-hours", label: t.realtime.officeHours.nav, icon: Clock },
     { href: "/mentor/grading", label: t.grading.nav, icon: ClipboardCheck },
-    { href: "/community", label: t.community.nav, icon: MessagesSquare },
-    { href: "/leaderboard", label: t.realtime.leaderboard.nav, icon: Trophy },
   ],
   admin: [
     { href: "/admin", label: t.common.nav.dashboard, icon: LayoutDashboard, exact: true },
@@ -68,14 +64,18 @@ export const NAV: Record<Portal, NavItem[]> = {
     { href: "/admin/grading", label: t.grading.nav, icon: ClipboardCheck },
     { href: "/admin/moderation", label: t.moderation.nav, icon: ShieldAlert },
     { href: "/admin/ai", label: "AI Mentor", icon: Bot },
-    { href: "/community", label: t.community.nav, icon: MessagesSquare },
-    { href: "/leaderboard", label: t.realtime.leaderboard.nav, icon: Trophy },
     { href: "/admin/payments", label: t.common.nav.payments, icon: Receipt },
     { href: "/admin/billing", label: t.common.nav.plans, icon: Tags },
     { href: "/admin/settings", label: t.common.nav.settings, icon: Settings },
     { href: "/admin/audit", label: t.common.nav.audit, icon: FileClock },
   ],
 };
+
+/** Pages every portal shares; shown as their own group under the portal's menu. */
+export const SHARED_NAV: NavItem[] = [
+  { href: "/community", label: t.community.nav, icon: MessagesSquare },
+  { href: "/leaderboard", label: t.realtime.leaderboard.nav, icon: Trophy },
+];
 
 export function isActive(item: NavItem, pathname: string) {
   if (item.exact) {

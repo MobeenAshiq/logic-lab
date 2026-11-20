@@ -6,16 +6,23 @@ export const site = {
     primaryCta: "Start 7-Day Free Trial",
     imageAlt: "LogicLab interactive student learning dashboard preview",
     stats: [
-      { value: "1,200+", label: "Active students" },
-      { value: "40+", label: "Hands-on lessons" },
-      { value: "15+", label: "Dedicated mentors" },
+      { value: "7 days", label: "Free trial" },
+      { value: "Rs 0", label: "To get started" },
+      { value: "1-on-1", label: "Mentor help" },
     ],
   },
-  trustBar: {
-    students: "1,200+ students",
-    lessons: "40+ lessons",
-    mentors: "15 mentors",
-    rating: "4.9/5 rating",
+  inside: {
+    title: "Everything inside one account",
+    items: [
+      "Live classes",
+      "Daily lessons",
+      "Daily coding challenges",
+      "AI tutor",
+      "Python notebook",
+      "Mentor chat",
+      "Community Q&A",
+      "Leaderboard",
+    ],
   },
   tracks: {
     title: "Three tracks, one path",
@@ -40,8 +47,8 @@ export const site = {
         body: "Watch video lessons, solve coding challenges, and get 1-on-1 feedback whenever you are stuck.",
       },
       {
-        title: "Earn certificate & rewards",
-        body: "Pass assessments to receive verifiable credentials and compete for monthly cash prizes.",
+        title: "Climb the leaderboard",
+        body: "Earn points for lessons, challenges and streaks, and watch your rank grow every week.",
       },
     ],
   },
@@ -82,10 +89,10 @@ export const site = {
     ],
   },
   leaderboard: {
-    title: "Monthly Leaderboard & Rewards",
+    title: "Learning that feels like a game",
     subtitle: "Consistent effort is rewarded. Earn points for daily lessons, streaks, and top quiz scores.",
-    rulesLink: "View competition rules",
-    monthlyPrizes: "PKR 50,000 monthly prize pool distributed among top 3 finishers every season.",
+    rulesLink: "See the leaderboard",
+    body: "Every lesson, quiz, challenge and daily streak earns points. Your rank updates live, so you always know how far you have come.",
   },
   mentors: {
     title: "Learn with real mentors",
@@ -97,30 +104,7 @@ export const site = {
       "Weekly live office hours for deep-dive questions",
       "Tailored advice for Pakistani tech careers",
     ],
-    imageAlt: "A mentor helping a student master code",
-    featured: [
-      {
-        name: "Hamza Tariq",
-        role: "Senior Software Engineer",
-        track: "Web Development",
-        expertise: "React, Next.js, Node.js & Architecture",
-        rating: "4.9",
-      },
-      {
-        name: "Ayesha Noor",
-        role: "Machine Learning Researcher",
-        track: "AI/ML & Data Science",
-        expertise: "Python, PyTorch & Data Analysis",
-        rating: "5.0",
-      },
-      {
-        name: "Bilal Ahmed",
-        role: "Algorithms & Systems Mentor",
-        track: "Logic Building",
-        expertise: "Data Structures, Logic & Problem Solving",
-        rating: "4.9",
-      },
-    ],
+    imageAlt: "A mentor helping a student with code",
   },
   pricing: {
     title: "Simple, transparent pricing",

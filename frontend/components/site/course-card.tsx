@@ -55,10 +55,12 @@ export function CourseCard({ course, href, className }: CourseCardProps) {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <div className="from-primary/15 to-primary/5 flex size-full items-center justify-center bg-gradient-to-br">
-              <span className="font-heading text-lg font-bold text-primary">
-                {course.title.slice(0, 2).toUpperCase()}
+            <div className="flex size-full flex-col justify-center gap-2 bg-[#0F172A] px-6 font-mono">
+              <span className="text-xs text-slate-500">{"// course"}</span>
+              <span className="line-clamp-2 text-base font-semibold text-[#5EEAD4]">
+                {course.title}
               </span>
+              <span className="text-xs text-slate-400">{"{ start learning }"}</span>
             </div>
           )}
         </div>

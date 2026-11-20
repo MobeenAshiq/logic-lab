@@ -16,7 +16,7 @@ export default async function PricingPage() {
         <p className="text-muted-foreground mt-3">{t.site.pricing.subtitle}</p>
       </div>
       {plans.length > 0 ? (
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid justify-center gap-6 [grid-template-columns:repeat(auto-fit,minmax(0,20rem))]">
           {plans.map((plan, i) => (
             <PlanCard key={plan.id} plan={plan} highlight={i === Math.min(1, plans.length - 1)} />
           ))}

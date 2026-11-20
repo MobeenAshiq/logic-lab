@@ -19,7 +19,8 @@ export function PlanCard({ plan, highlight = false }: { plan: PublicPlan; highli
   return (
     <Card
       className={cn(
-        "card-hover relative flex flex-col rounded-xl border border-border bg-card p-0 transition-all shadow-sm",
+        // overflow-visible so the "Most popular" badge is not clipped by the card.
+        "card-hover relative flex flex-col overflow-visible rounded-xl border border-border bg-card p-0 transition-all shadow-sm",
         highlight && "border-primary ring-1 ring-primary/80 shadow-md",
       )}
     >

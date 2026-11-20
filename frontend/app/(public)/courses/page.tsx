@@ -32,7 +32,7 @@ function Chip({
     <Link
       href={href}
       className={cn(
-        "rounded-full border px-3 py-1 text-sm transition-colors",
+        "rounded-[4px] border px-3 py-1 text-sm transition-colors",
         active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
       )}
     >
