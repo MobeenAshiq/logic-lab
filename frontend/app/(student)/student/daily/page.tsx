@@ -451,7 +451,7 @@ export default function StudentDailyPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Sparkles className="size-5 text-primary" />
-                          <h4 className="font-semibold text-sm">Mentor Review</h4>
+                          <h4 className="font-semibold text-sm">Code Review</h4>
                         </div>
                         <Badge variant={assignmentResult.passed ? "default" : "secondary"}>
                           Score: {assignmentResult.score}/100
@@ -490,7 +490,7 @@ export default function StudentDailyPage() {
 
                   <div className="mt-4 pt-3 border-t flex items-center justify-between">
                     <p className="text-[11px] text-muted-foreground">
-                      Your mentor will review your code line by line.
+                      Your code will be reviewed line by line.
                     </p>
                     <Button
                       size="sm"

@@ -142,7 +142,7 @@ export class AuthController {
     return { message: t.messages.PASSWORD_RESET };
   }
 
-  @RateLimit('login')
+  @RateLimit('change-password')
   @HttpCode(HttpStatus.OK)
   @Post('change-password')
   async changePassword(
