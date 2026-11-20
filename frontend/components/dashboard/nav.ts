@@ -18,7 +18,6 @@ import {
   Sparkles,
   Tags,
   Trophy,
-  UserRound,
   Users,
   Video,
 } from "lucide-react";
@@ -45,7 +44,6 @@ export const NAV: Record<Portal, NavItem[]> = {
     { href: "/student/notebook", label: "Python notebook", icon: BookOpen },
     { href: "/student/doubts", label: t.realtime.chat.nav, icon: MessageCircleQuestion },
     { href: "/student/billing", label: t.common.nav.billing, icon: CreditCard },
-    { href: "/student/profile", label: "Profile", icon: UserRound },
   ],
   mentor: [
     { href: "/mentor", label: t.common.nav.dashboard, icon: LayoutDashboard, exact: true },

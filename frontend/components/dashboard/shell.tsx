@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -94,17 +94,59 @@ function UserMenu() {
   );
 }
 
-function LogoutLink() {
+/** Bottom of the sidebar: who is signed in, their profile, and log out. */
+function AccountBlock({ portal, onNavigate }: { portal: Portal; onNavigate?: () => void }) {
+  const { data } = useMe();
   const logout = useLogout();
+  const pathname = usePathname();
+  const user = data?.user;
+  const initials = (user?.fullName || user?.email || "?")
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const profileHref = `/${portal}/profile`;
+  const itemClass =
+    "text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2.5 rounded-[4px] px-3 py-2 text-sm font-medium transition-colors";
+
   return (
-    <button
-      type="button"
-      onClick={() => logout.mutate()}
-      disabled={logout.isPending}
-      className="text-muted-foreground hover:bg-muted hover:text-foreground mt-auto flex items-center gap-2.5 rounded-[4px] px-3 py-2 text-sm font-medium transition-colors"
-    >
-      <LogOut className="size-4" /> {t.common.actions.logout}
-    </button>
+    <div className="mt-auto grid gap-1 border-t pt-3">
+      <div className="flex items-center gap-2.5 px-3 py-2">
+        <Avatar className="size-8">
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{user?.fullName}</p>
+          <p className="text-muted-foreground truncate text-xs">{user?.email}</p>
+        </div>
+      </div>
+      {/* Only the student portal has a profile page so far. */}
+      {portal === "student" && (
+        <Link
+          href={profileHref}
+          onClick={onNavigate}
+          aria-current={pathname === profileHref ? "page" : undefined}
+          className={cn(
+            itemClass,
+            pathname === profileHref &&
+              "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
+          )}
+        >
+          <UserRound className="size-4" /> Profile
+        </Link>
+      )}
+      <button
+        type="button"
+        onClick={() => logout.mutate()}
+        disabled={logout.isPending}
+        className={itemClass}
+      >
+        <LogOut className="size-4" /> {t.common.actions.logout}
+      </button>
+    </div>
   );
 }
 
@@ -145,7 +187,7 @@ export function DashboardShell({
             </div>
           )}
           <NavLinks portal={portal} />
-          {siteHeader && <LogoutLink />}
+          {siteHeader && <AccountBlock portal={portal} />}
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -175,7 +217,7 @@ export function DashboardShell({
                   </SheetTitle>
                 </SheetHeader>
                 <NavLinks portal={portal} onNavigate={() => setOpen(false)} />
-                {siteHeader && <LogoutLink />}
+                {siteHeader && <AccountBlock portal={portal} onNavigate={() => setOpen(false)} />}
               </SheetContent>
             </Sheet>
             <Logo href={home} className="lg:hidden" />

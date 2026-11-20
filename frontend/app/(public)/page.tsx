@@ -47,15 +47,15 @@ const UNLOCKS = [
 ];
 
 const FEATURES = [
-  { icon: BookOpen, title: "Courses", body: "Step-by-step lessons, quizzes and assignments", href: "/student/courses", tint: "text-[#0F766E] dark:text-[#2DD4BF]" },
-  { icon: Sparkles, title: "Daily Lesson", body: "A new lesson and 5-question quiz every day", href: "/student/daily", tint: "text-[#7C3AED] dark:text-[#A78BFA]" },
-  { icon: Code2, title: "Daily Challenges", body: "One coding problem a day, auto-checked", href: "/student/challenges", tint: "text-[#2563EB] dark:text-[#60A5FA]" },
-  { icon: NotebookPen, title: "Python Notebook", body: "Write and run Python in your browser", href: "/student/notebook", tint: "text-[#CA8A04] dark:text-[#FACC15]" },
-  { icon: Video, title: "Live Classes", body: "Learn live and ask questions as you go", href: "/student/live", tint: "text-[#DC2626] dark:text-[#F87171]" },
-  { icon: Bot, title: "AI Tutor", body: "Hints and error explanations, any time", href: "/student/mentor", tint: "text-[#0891B2] dark:text-[#22D3EE]" },
-  { icon: MessageCircleQuestion, title: "Mentor Chat", body: "Ask your doubts to real mentors", href: "/student/doubts", tint: "text-[#DB2777] dark:text-[#F472B6]" },
-  { icon: MessagesSquare, title: "Community", body: "Ask, answer and learn with other students", href: "/community", tint: "text-[#16A34A] dark:text-[#4ADE80]" },
-  { icon: Trophy, title: "Leaderboard", body: "Earn points and climb the weekly ranks", href: "/leaderboard", tint: "text-[#D97706] dark:text-[#FBBF24]" },
+  { icon: BookOpen, title: "Courses", body: "Step-by-step lessons, quizzes and assignments", href: "/student/courses" },
+  { icon: Sparkles, title: "Daily Lesson", body: "A new lesson and 5-question quiz every day", href: "/student/daily" },
+  { icon: Code2, title: "Daily Challenges", body: "One coding problem a day, auto-checked", href: "/student/challenges" },
+  { icon: NotebookPen, title: "Python Notebook", body: "Write and run Python in your browser", href: "/student/notebook" },
+  { icon: Video, title: "Live Classes", body: "Learn live and ask questions as you go", href: "/student/live" },
+  { icon: Bot, title: "AI Tutor", body: "Hints and error explanations, any time", href: "/student/mentor" },
+  { icon: MessageCircleQuestion, title: "Mentor Chat", body: "Ask your doubts to real mentors", href: "/student/doubts" },
+  { icon: MessagesSquare, title: "Community", body: "Ask, answer and learn with other students", href: "/community" },
+  { icon: Trophy, title: "Leaderboard", body: "Earn points and climb the weekly ranks", href: "/leaderboard" },
 ];
 
 /** Quick links under the header, like a topic bar. */
@@ -135,7 +135,7 @@ export default async function LandingPage() {
               {hero.title || t.site.hero.headline}
             </h1>
             <p className="mt-4 text-lg text-slate-300">{hero.subtitle}</p>
-            <p className="mt-2 text-lg font-bold text-[#FACC15]">{t.site.hero.badge}</p>
+            <p className="mt-2 text-lg font-bold text-[#5EEAD4]">{t.site.hero.badge}</p>
 
             <p className="mt-8 text-sm font-semibold text-slate-300">A free account unlocks:</p>
             <ul className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
@@ -253,7 +253,7 @@ export default async function LandingPage() {
                 href={featureHref(f.href)}
                 className="group flex flex-col items-center rounded-[6px] border border-border bg-card p-6 text-center transition-colors hover:border-primary/60 hover:shadow-md"
               >
-                <f.icon className={cn("size-9", f.tint)} />
+                <f.icon className="size-9 text-primary" />
                 <span className="font-heading text-foreground mt-3 font-bold">{f.title}</span>
                 <span className="text-muted-foreground mt-1 text-xs leading-relaxed">{f.body}</span>
               </Link>
