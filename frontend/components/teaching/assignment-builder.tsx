@@ -29,6 +29,7 @@ const schema = z
     instructions: z.string().max(20_000),
     dueAt: z.string(),
     maxMarks: z.coerce.number<string>().int().min(1).max(1_000),
+    autoGrade: z.boolean(),
     rubric: z
       .array(
         z.object({
@@ -52,6 +53,7 @@ function defaults(a: AssignmentData): FormIn {
     instructions: a.instructions,
     dueAt: toLocalInput(a.dueAt),
     maxMarks: String(a.maxMarks),
+    autoGrade: a.autoGrade,
     rubric: a.rubric.map((c) => ({ ...c, maxPoints: String(c.maxPoints) })),
   };
 }
@@ -95,6 +97,7 @@ function AssignmentForm({ assignment }: { assignment: AssignmentData }) {
           instructions: v.instructions,
           dueAt: fromLocalInput(v.dueAt),
           maxMarks: v.maxMarks,
+          autoGrade: v.autoGrade,
           rubric: v.rubric,
         },
       }),
@@ -150,6 +153,18 @@ function AssignmentForm({ assignment }: { assignment: AssignmentData }) {
               <Input id="as-max" inputMode="numeric" {...form.register("maxMarks")} />
             </Field>
           </div>
+
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 text-sm font-medium">Grading</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" value="manual" checked={!form.watch("autoGrade")} onChange={() => form.setValue("autoGrade", false, { shouldDirty: true })} className="mt-1" />
+              <span><strong>Manual</strong>: a mentor marks each submission with the rubric.</span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" value="auto" checked={form.watch("autoGrade")} onChange={() => form.setValue("autoGrade", true, { shouldDirty: true })} className="mt-1" />
+              <span><strong>Auto</strong>: the AI marks each submission with the rubric right away. Mentors can change the marks later.</span>
+            </label>
+          </fieldset>
 
           <div className="grid gap-3">
             <div>

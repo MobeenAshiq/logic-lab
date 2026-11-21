@@ -31,6 +31,8 @@ export const en = {
     SUPER_ADMIN_ONLY: 'Only a super admin can do this.',
     STORAGE_NOT_CONFIGURED: 'File uploads are not available right now.',
     TRACK_NOT_FOUND: 'Track not found.',
+    COURSE_GENERATION_RUNNING:
+      'A course is already being generated. Please wait for it to finish.',
     COURSE_NOT_FOUND: 'Course not found.',
     MODULE_NOT_FOUND: 'Module not found.',
     LESSON_NOT_FOUND: 'Lesson not found.',

@@ -567,6 +567,8 @@ export interface AssignmentBuilder {
   instructions: string;
   dueAt: string | null;
   maxMarks: number;
+  /** true: the AI marks submissions against the rubric; mentors can regrade. */
+  autoGrade: boolean;
   rubric: RubricCriterion[];
   submissionCounts: Partial<Record<SubmissionStatus, number>>;
 }

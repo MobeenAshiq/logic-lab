@@ -748,6 +748,8 @@ model Assignment {
   instructions String    @default("")
   dueAt        DateTime? @map("due_at") @db.Timestamptz
   maxMarks     Int       @default(100) @map("max_marks")
+  /// true: the AI marks each submission against the rubric; a mentor can still regrade.
+  autoGrade    Boolean   @default(false) @map("auto_grade")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 

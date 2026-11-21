@@ -114,6 +114,7 @@ export const assignmentSettingsSchema = z
     dueAt: z.iso.datetime().nullable(),
     maxMarks: z.number().int().min(1).max(1_000),
     rubric: z.array(rubricCriterionSchema).max(20),
+    autoGrade: z.boolean().default(false),
   })
   .refine(
     (v) =>

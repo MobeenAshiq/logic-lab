@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { AiFlagStatus, AiSender } from '@prisma/client';
+import { AiFlagStatus, AiSender, AttemptStatus } from '@prisma/client';
 import { AiQuotaService } from '../ai/ai-quota.service';
 import { AiRouterService } from '../ai/ai-router.service';
 import { coverage, lessonText, tokenSet } from '../ai/ai-text';
@@ -182,6 +182,22 @@ export class MentorService {
         'AI_MENTOR_DISABLED',
       );
     const session = await this.owned(auth, sessionId);
+
+    // No AI help while any quiz is open, or students could paste questions here.
+    const openQuiz = await this.prisma.quizAttempt.findFirst({
+      where: {
+        userId: auth.id,
+        status: AttemptStatus.in_progress,
+        deadlineAt: { gt: new Date() },
+      },
+      select: { id: true },
+    });
+    if (openQuiz) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        'ACTIVE_ASSESSMENT_AI_DISABLED',
+      );
+    }
 
     const blocked = checkPrompt(content, config.blockedPhrases);
     if (blocked) {

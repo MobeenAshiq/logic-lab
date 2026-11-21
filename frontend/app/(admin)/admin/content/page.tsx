@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -101,9 +101,16 @@ export default function ContentPage() {
         title={s.tracks.title}
         description={s.tracks.description}
         actions={
-          <Button onClick={() => setDialog({ open: true, track: null })}>
-            <Plus /> {s.tracks.new}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/admin/content/generate">
+                <Sparkles /> Generate with AI
+              </Link>
+            </Button>
+            <Button onClick={() => setDialog({ open: true, track: null })}>
+              <Plus /> {s.tracks.new}
+            </Button>
+          </div>
         }
       />
 

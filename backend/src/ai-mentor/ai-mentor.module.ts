@@ -8,6 +8,8 @@ import {
   StudentAutonomousController,
 } from './autonomous-content.controller';
 import { CodingAgentService } from './coding-agent.service';
+import { CourseGeneratorController } from './course-generator.controller';
+import { CourseGeneratorService } from './course-generator.service';
 import { AutonomousContentService } from './autonomous-content.service';
 import { AdminAiController, MentorController } from './mentor.controller';
 import { MentorService } from './mentor.service';
@@ -19,12 +21,14 @@ import { MentorService } from './mentor.service';
     AdminAiController,
     AdminAutonomousController,
     StudentAutonomousController,
+    CourseGeneratorController,
   ],
   providers: [
     MentorService,
     AdminAiService,
     AutonomousContentService,
     CodingAgentService,
+    CourseGeneratorService,
   ],
   exports: [MentorService, AdminAiService, AutonomousContentService],
 })
