@@ -333,6 +333,8 @@ model Plan {
   /// true = every track, including tracks added later; otherwise only trackIds.
   allTracks    Boolean  @default(false) @map("all_tracks")
   trackIds     String[] @default([]) @map("track_ids") @db.Uuid
+  /// A plan for specific courses (each course can have its own plan).
+  courseIds    String[] @default([]) @map("course_ids") @db.Uuid
   isActive     Boolean  @default(true) @map("is_active")
   position     Int      @default(0)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -353,6 +355,7 @@ model Subscription {
   /// Snapshot of the plan's tracks when the subscription was created.
   allTracks        Boolean            @default(false) @map("all_tracks")
   trackIds         String[]           @default([]) @map("track_ids") @db.Uuid
+  courseIds        String[]           @default([]) @map("course_ids") @db.Uuid
   startsAt         DateTime?          @map("starts_at") @db.Timestamptz
   endsAt           DateTime?          @map("ends_at") @db.Timestamptz
   reminder3dSentAt DateTime?          @map("reminder_3d_sent_at") @db.Timestamptz

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BookOpen,
@@ -22,7 +22,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ErrorState, LoadingRows, StatusBadge } from "@/components/shared";
 import { Progress } from "@/components/student/progress";
 import { TrackIcon } from "@/components/site/track-icon";
@@ -33,7 +32,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api } from "@/lib/api/client";
 import { useMe } from "@/lib/auth";
 import { TRACK_ART, TRACK_THEMES } from "@/lib/brand";
-import { toastError } from "@/lib/errors";
 import { daysLeft, formatDate } from "@/lib/format";
 import { formatClock, formatDuration, learningKeys } from "@/lib/learning";
 import { BILLING_KEY } from "@/lib/student";
@@ -85,7 +83,15 @@ export default function StudentDashboard() {
   const myTrackIds = new Set(b.access.flatMap((a) => a.trackIds));
   const myTrackSlugs = new Set([...myTrackIds].map((id) => trackById.get(id)?.slug));
 
-  const myCourses = (courses.data ?? []).filter((c) => allTracks || myTrackSlugs.has(c.track.slug));
+  // Courses the student has: paid by track or course plan, or started (inside their free 14 days).
+  const myCourseIds = new Set([
+    ...b.access.flatMap((a) => a.courseIds),
+    ...b.freeCourses.map((f) => f.courseId),
+  ]);
+  const myCourses = (courses.data ?? []).filter(
+    (c) => allTracks || myTrackSlugs.has(c.track.slug) || myCourseIds.has(c.id),
+  );
+  const courseTitle = new Map((courses.data ?? []).map((c) => [c.id, c.title]));
 
   const courseProgressMap = new Map<
     string,
@@ -143,7 +149,7 @@ export default function StudentDashboard() {
               <Sparkles className="size-3.5" />
               <span>
                 {primaryAccess?.status === "trial"
-                  ? `7-Day Free Trial · ${trialDaysRemaining} days remaining`
+                  ? `Free trial · ${trialDaysRemaining} days remaining`
                   : primaryAccess?.plan?.name ?? "Student Portal"}
               </span>
             </div>
@@ -172,14 +178,14 @@ export default function StudentDashboard() {
                   </Link>
                 </Button>
               </div>
-            ) : b.needsTrackChoice ? (
+            ) : myCourses.length === 0 ? (
               <div className="pt-2">
                 <Button asChild size="default" className="gap-2 font-semibold shadow-sm">
-                  <a href="#trial-picker">
+                  <Link href="/student/courses">
                     <Sparkles className="size-4" />
-                    <span>Pick Your Free Trial Track</span>
+                    <span>Start a course: the first 14 days are free</span>
                     <ArrowRight className="size-4" />
-                  </a>
+                  </Link>
                 </Button>
               </div>
             ) : null}
@@ -215,13 +221,6 @@ export default function StudentDashboard() {
           </div>
         </div>
       </div>
-
-      {/* 2. Trial Picker (if first login / track selection needed) */}
-      {b.needsTrackChoice && (
-        <div id="trial-picker">
-          <TrialPicker tracks={tracks.data} />
-        </div>
-      )}
 
       {/* Pending Payment Notification */}
       {pendingPayment && (
@@ -603,7 +602,36 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Plan & Subscription Status Card (inspired by toko Level Up card) */}
-          {b.hasAccess ? (
+          {b.freeCourses.length > 0 && (
+            <Card className="border-primary/40 bg-primary/5 shadow-xs">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-base font-bold flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" /> Free courses
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Every course is free for 14 days from the day you start it.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-0">
+                {b.freeCourses.map((f) => {
+                  const left = daysLeft(f.endsAt);
+                  return (
+                    <div key={f.courseId} className="flex items-center justify-between gap-2 rounded-[4px] border bg-card p-2.5 text-xs">
+                      <span className="min-w-0 truncate font-medium">{f.title}</span>
+                      <span className={cn("shrink-0 font-semibold", left <= 3 ? "text-warning" : "text-primary")}>
+                        {left} day{left === 1 ? "" : "s"} left
+                      </span>
+                    </div>
+                  );
+                })}
+                <Button asChild variant="outline" className="w-full text-xs font-semibold">
+                  <Link href="/student/billing">Buy a course plan</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {primaryAccess ? (
             <Card className="border-border bg-gradient-to-br from-card to-surface shadow-xs">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -619,15 +647,17 @@ export default function StudentDashboard() {
               <CardContent className="space-y-3 pt-0">
                 <div>
                   <p className="font-heading text-sm font-bold text-foreground">
-                    {primaryAccess?.plan?.name ?? "7-Day Free Trial"}
+                    {primaryAccess?.plan?.name ?? "Free trial"}
                   </p>
                   <p className="text-muted-foreground text-xs mt-0.5">
                     {primaryAccess?.allTracks
                       ? "Full access to all tracks"
-                      : primaryAccess?.trackIds
-                        .map((id) => trackById.get(id)?.title)
-                        .filter(Boolean)
-                        .join(", ")}
+                      : [
+                          ...primaryAccess.trackIds.map((id) => trackById.get(id)?.title),
+                          ...primaryAccess.courseIds.map((id) => courseTitle.get(id)),
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
                   </p>
                 </div>
 
@@ -651,22 +681,22 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
           ) : (
-            !b.needsTrackChoice &&
+            b.freeCourses.length === 0 &&
             !pendingPayment && (
               <Card className="border-primary/40 bg-primary/5 shadow-xs">
                 <CardHeader className="pb-3">
                   <CardTitle className="font-heading text-base font-bold flex items-center gap-2 text-foreground">
                     <Lock className="size-4 text-primary" />
-                    Access Required
+                    Start learning
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Choose a plan to unlock all lessons, assignments, and mentor office hours.
+                    Open any course to get 14 free days. After that, buy that course&apos;s plan to keep going.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <Button asChild className="w-full font-semibold">
-                    <Link href="/student/billing">
-                      Choose a Plan <ArrowRight className="size-4 ml-1" />
+                    <Link href="/student/courses">
+                      Browse courses <ArrowRight className="size-4 ml-1" />
                     </Link>
                   </Button>
                 </CardContent>
@@ -676,91 +706,6 @@ export default function StudentDashboard() {
         </div>
       </div>
     </div>
-  );
-}
-
-function TrialPicker({ tracks }: { tracks: PublicTrack[] }) {
-  const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<string | null>(null);
-  const start = useMutation({
-    mutationFn: (trackId: string) => api("/student/trial", { method: "POST", body: { trackId } }),
-    onSuccess: async () => {
-      toast.success(t.student.dashboard.trialStarted);
-      await queryClient.invalidateQueries({ queryKey: BILLING_KEY });
-    },
-    onError: toastError,
-  });
-
-  return (
-    <Card className="border-primary/40 bg-gradient-to-br from-card via-card to-primary/5 shadow-sm">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="size-4" />
-          </span>
-          <div>
-            <CardTitle className="font-heading text-lg font-bold">
-              {t.student.dashboard.chooseTrackTitle}
-            </CardTitle>
-            <CardDescription className="text-xs mt-0.5">
-              {t.student.dashboard.chooseTrackBody}
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div role="radiogroup" className="grid gap-4 md:grid-cols-3">
-          {tracks.map((track) => {
-            const isSelected = selected === track.id;
-            return (
-              <button
-                key={track.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => setSelected(track.id)}
-                className={cn(
-                  "hover:border-primary/50 relative flex flex-col rounded-xl border p-5 text-left transition-all",
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/40 shadow-sm"
-                    : "border-border bg-surface/50",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <TrackIcon name={track.icon} className="text-primary size-6" />
-                  {isSelected && (
-                    <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground">
-                      <CheckCircle2 className="size-3.5" />
-                    </span>
-                  )}
-                </div>
-                <p className="font-heading mt-4 font-bold text-base text-foreground">{track.title}</p>
-                <p className="text-muted-foreground mt-1 text-xs leading-relaxed line-clamp-3">
-                  {track.description}
-                </p>
-                <div className="mt-4 pt-3 border-t border-border/60 text-xs text-muted-foreground">
-                  <span>{track._count?.courses ?? 0} courses included</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-6 flex items-center justify-between border-t border-border/80 pt-4">
-          <p className="text-muted-foreground text-xs">
-            No credit card or payment needed. Instant 7-day access.
-          </p>
-          <Button
-            size="default"
-            className="font-semibold px-6"
-            disabled={!selected || start.isPending}
-            onClick={() => selected && start.mutate(selected)}
-          >
-            {start.isPending ? "Starting trial..." : t.student.dashboard.startTrial}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

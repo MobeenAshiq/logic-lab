@@ -41,10 +41,7 @@ export class LiveClassesService {
       },
     });
     if (!assigned) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        'NOT_COURSE_MENTOR',
-      );
+      throw new AppException(HttpStatus.FORBIDDEN, 'NOT_COURSE_MENTOR');
     }
   }
 
@@ -52,7 +49,9 @@ export class LiveClassesService {
     const session = await this.prisma.liveSession.findUnique({
       where: { id },
       include: {
-        course: { select: { id: true, title: true, trackId: true, slug: true } },
+        course: {
+          select: { id: true, title: true, trackId: true, slug: true },
+        },
         mentor: {
           select: {
             id: true,
@@ -63,10 +62,7 @@ export class LiveClassesService {
       },
     });
     if (!session) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        'LIVE_SESSION_NOT_FOUND',
-      );
+      throw new AppException(HttpStatus.NOT_FOUND, 'LIVE_SESSION_NOT_FOUND');
     }
     return session;
   }
@@ -101,9 +97,13 @@ export class LiveClassesService {
       where: { id },
       data: {
         ...(input.title && { title: input.title }),
-        ...(input.description !== undefined && { description: input.description }),
+        ...(input.description !== undefined && {
+          description: input.description,
+        }),
         ...(input.startsAt && { startsAt: new Date(input.startsAt) }),
-        ...(input.durationMinutes && { durationMinutes: input.durationMinutes }),
+        ...(input.durationMinutes && {
+          durationMinutes: input.durationMinutes,
+        }),
       },
       include: {
         course: { select: { id: true, title: true } },
@@ -228,7 +228,9 @@ export class LiveClassesService {
     const sessions = await this.prisma.liveSession.findMany({
       orderBy: { startsAt: 'asc' },
       include: {
-        course: { select: { id: true, title: true, slug: true, trackId: true } },
+        course: {
+          select: { id: true, title: true, slug: true, trackId: true },
+        },
         mentor: {
           select: {
             id: true,
@@ -245,7 +247,9 @@ export class LiveClassesService {
     // Filter by student access
     const accessibleSessions: typeof sessions = [];
     for (const s of sessions) {
-      const access = await this.subscriptions.hasAccess(auth.id, s.courseId);
+      const access = await this.subscriptions.hasAccess(auth.id, s.courseId, {
+        startFree: false,
+      });
       if (access) {
         accessibleSessions.push(s);
       }
@@ -257,7 +261,8 @@ export class LiveClassesService {
         const nowTime = now.getTime();
         const endTime = startsAtTime + s.durationMinutes * 60 * 1000;
         const canJoin =
-          nowTime >= startsAtTime - TEN_MINUTES_MS && nowTime <= endTime + 30 * 60 * 1000;
+          nowTime >= startsAtTime - TEN_MINUTES_MS &&
+          nowTime <= endTime + 30 * 60 * 1000;
 
         let recordingUrl: string | null = null;
         if (s.recordingKey) {
@@ -296,12 +301,12 @@ export class LiveClassesService {
 
     if (!isStaff) {
       // Must have subscription access to course
-      const access = await this.subscriptions.hasAccess(auth.id, session.courseId);
+      const access = await this.subscriptions.hasAccess(
+        auth.id,
+        session.courseId,
+      );
       if (!access) {
-        throw new AppException(
-          HttpStatus.FORBIDDEN,
-          'SUBSCRIPTION_REQUIRED',
-        );
+        throw new AppException(HttpStatus.FORBIDDEN, 'SUBSCRIPTION_REQUIRED');
       }
 
       // Check time window (within 10 minutes of start)
@@ -436,10 +441,7 @@ export class LiveClassesService {
     }
 
     if (!session.recordingKey) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        'RECORDING_NOT_UPLOADED',
-      );
+      throw new AppException(HttpStatus.BAD_REQUEST, 'RECORDING_NOT_UPLOADED');
     }
 
     const mod = await this.prisma.module.findUnique({

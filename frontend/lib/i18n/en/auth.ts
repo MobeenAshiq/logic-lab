@@ -16,7 +16,7 @@ export const auth = {
   },
   signup: {
     title: "Create your account",
-    subtitle: "Start with a 7-day free trial. No payment needed.",
+    subtitle: "Every course is free for 14 days. No payment needed.",
     submit: "Create account",
     haveAccount: "Already have an account?",
     login: "Log in",

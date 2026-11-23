@@ -120,6 +120,7 @@ export class PaymentsService {
           planId: quote.plan.id,
           allTracks: quote.plan.allTracks,
           trackIds: quote.plan.trackIds,
+          courseIds: quote.plan.courseIds,
         };
         const pendingSub = await tx.subscription.findFirst({
           where: { userId: auth.id, status: SubscriptionStatus.pending },
@@ -249,11 +250,13 @@ export class PaymentsService {
         const payment = await this.lockPending(tx, id);
         const plan = payment.plan;
 
-        // Renewals start when the current paid access ends; otherwise now.
+        // Renewals of the same plan start when its current access ends; otherwise now
+        // (buying a different course's plan must not wait for another course to expire).
         const now = new Date();
         const current = await tx.subscription.findFirst({
           where: {
             userId: payment.userId,
+            planId: plan.id,
             status: SubscriptionStatus.active,
             endsAt: { gt: now },
             NOT: { id: payment.subscriptionId },
@@ -270,6 +273,7 @@ export class PaymentsService {
             planId: plan.id,
             allTracks: plan.allTracks,
             trackIds: plan.trackIds,
+            courseIds: plan.courseIds,
             startsAt,
             endsAt,
           },

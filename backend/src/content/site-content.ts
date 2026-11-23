@@ -71,7 +71,7 @@ export const SITE_CONTENT_DEFAULTS: SiteContent = {
     title: 'Learn to think like a programmer',
     subtitle:
       'Logic Building, Web Development and AI/ML with real mentors, built for students in Pakistan.',
-    ctaText: 'Start your 7-day free trial',
+    ctaText: 'Start learning free',
     ctaHref: '/signup',
   },
   faq: {
@@ -79,7 +79,7 @@ export const SITE_CONTENT_DEFAULTS: SiteContent = {
       {
         question: 'How does the free trial work?',
         answer:
-          'You get 7 days of full access to one track. No payment details are needed to start.',
+          'Every course is free for 14 days from the day you start it. No payment details are needed.',
       },
       {
         question: 'How do I pay?',

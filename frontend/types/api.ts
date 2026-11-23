@@ -375,6 +375,8 @@ export interface AdminPlan {
   durationDays: number;
   allTracks: boolean;
   trackIds: string[];
+  /** A plan for specific courses. */
+  courseIds: string[];
   isActive: boolean;
   position: number;
   createdAt: string;
@@ -389,6 +391,7 @@ export interface PublicPlan {
   durationDays: number;
   allTracks: boolean;
   tracks: { id: string; slug: string; title: string }[];
+  courses: { id: string; slug: string; title: string }[];
 }
 
 export interface Coupon {
@@ -410,6 +413,7 @@ export interface AccessItem {
   plan: { id: string; name: string } | null;
   allTracks: boolean;
   trackIds: string[];
+  courseIds: string[];
   startsAt: string;
   endsAt: string;
 }
@@ -439,8 +443,8 @@ export interface StudentBilling {
   access: AccessItem[];
   hasAccess: boolean;
   pendingSubscription: { id: string; plan: { id: string; name: string } | null } | null;
-  canStartTrial: boolean;
-  needsTrackChoice: boolean;
+  /** Courses still inside their free 14 days, counted from when the student first opened them. */
+  freeCourses: { courseId: string; title: string; endsAt: string }[];
   plans: PublicPlan[];
   payments: StudentPayment[];
   paymentInstructions: PaymentInstructions;

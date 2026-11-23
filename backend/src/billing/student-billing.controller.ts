@@ -17,16 +17,8 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { SettingsService } from '../settings/settings.service';
 import { slipUploadSchema } from '../storage/uploads';
 import type { SlipUploadInput } from '../storage/uploads';
-import {
-  quoteSchema,
-  startTrialSchema,
-  submitPaymentSchema,
-} from './billing.schemas';
-import type {
-  QuoteInput,
-  StartTrialInput,
-  SubmitPaymentInput,
-} from './billing.schemas';
+import { quoteSchema, submitPaymentSchema } from './billing.schemas';
+import type { QuoteInput, SubmitPaymentInput } from './billing.schemas';
 import { InvoicesService } from './invoices.service';
 import { PaymentsService } from './payments.service';
 import { PlansService } from './plans.service';
@@ -66,15 +58,6 @@ export class StudentBillingController {
       paymentInstructions: instructions,
       slipUploads: this.payments.slipUploadsEnabled,
     };
-  }
-
-  @Roles(Role.student)
-  @Post('student/trial')
-  startTrial(
-    @CurrentUser() user: AuthUser,
-    @Body(new ZodValidationPipe(startTrialSchema)) body: StartTrialInput,
-  ) {
-    return this.subscriptions.startTrial(user, body.trackId);
   }
 
   @Roles(Role.student)

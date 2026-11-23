@@ -1,12 +1,12 @@
 export const site = {
   hero: {
-    badge: "7-day free trial · No card needed",
+    badge: "Every course free for 14 days · No card needed",
     headline: "Learn to code with real mentors, not just videos",
     secondaryCta: "Explore courses",
-    primaryCta: "Start 7-Day Free Trial",
+    primaryCta: "Start learning free",
     imageAlt: "LogicLab interactive student learning dashboard preview",
     stats: [
-      { value: "7 days", label: "Free trial" },
+      { value: "14 days", label: "Free per course" },
       { value: "Rs 0", label: "To get started" },
       { value: "1-on-1", label: "Mentor help" },
     ],
@@ -40,7 +40,7 @@ export const site = {
       },
       {
         title: "Free trial",
-        body: "Get 7 full days of unrestricted access to all lessons, assignments, and mentor office hours.",
+        body: "Every course is free for 14 days from the day you start it: lessons, assignments and mentor help.",
       },
       {
         title: "Learn with mentors",
@@ -108,13 +108,13 @@ export const site = {
   },
   pricing: {
     title: "Simple, transparent pricing",
-    subtitle: "Start free for 7 days. Pay in rupees with the local payment method you already use.",
+    subtitle: "Every course is free for 14 days. Then pay for just the courses you want, in rupees.",
     perDays: (days: number) => (days === 30 ? "/ month" : `/ ${days} days`),
     allTracks: "All tracks included",
     choose: "Get started",
     seeAll: "See all plans",
-    empty: "New season plans will be announced soon. Start your 7-day free trial today!",
-    trialNote: "Every new account starts with a 7-day free trial on one track.",
+    empty: "Plans will be announced soon. Every course is free for 14 days, so start today!",
+    trialNote: "Every course is free for 14 days from the day you start it.",
     methods: "Pay securely with EasyPaisa or JazzCash.",
   },
   faq: {
@@ -123,7 +123,7 @@ export const site = {
   },
   testimonials: { title: "What students say" },
   cta: {
-    title: "Start your 7-day free trial today",
+    title: "Start any course free for 14 days",
     body: "No credit card needed. Pick a track and start building real programming logic in minutes.",
   },
   catalog: {

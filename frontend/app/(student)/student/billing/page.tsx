@@ -182,7 +182,7 @@ function Checkout({
                   <p className="text-muted-foreground mt-1 text-xs">
                     {plan.allTracks
                       ? t.site.pricing.allTracks
-                      : plan.tracks.map((tr) => tr.title).join(", ")}
+                      : [...plan.courses, ...plan.tracks].map((x) => x.title).join(", ")}
                   </p>
                 </button>
               );

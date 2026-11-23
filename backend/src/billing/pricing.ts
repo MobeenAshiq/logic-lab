@@ -1,6 +1,7 @@
 import { Coupon, DiscountType } from '@prisma/client';
 
-export const TRIAL_DAYS = 7;
+/** Every course is free for this many days from the first time a student opens it. */
+export const FREE_COURSE_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function addDays(date: Date, days: number) {
@@ -38,21 +39,6 @@ export function normalizeCouponCode(code: string) {
 /** One payment per transaction ID: compare without spaces/case differences. */
 export function normalizeTransactionId(id: string) {
   return id.replace(/\s+/g, '').toUpperCase();
-}
-
-/**
- * Canonical form of an email for "one trial per email": lowercase, no +tag,
- * and for Gmail no dots (a.b+x@gmail.com == ab@gmail.com).
- */
-export function trialEmailKey(email: string) {
-  const [local, domain] = email.trim().toLowerCase().split('@');
-  let user = local.split('+')[0];
-  let host = domain;
-  if (host === 'gmail.com' || host === 'googlemail.com') {
-    user = user.replace(/\./g, '');
-    host = 'gmail.com';
-  }
-  return `${user}@${host}`;
 }
 
 /**

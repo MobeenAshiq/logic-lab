@@ -3,7 +3,7 @@ import { Prisma, SubscriptionStatus } from '@prisma/client';
 import { AuthUser } from '../auth/auth.types';
 import { AppException } from '../common/app-exception';
 import { PrismaService } from '../prisma/prisma.service';
-import { addDays, TRIAL_DAYS, trialEmailKey } from './pricing';
+import { addDays, FREE_COURSE_DAYS } from './pricing';
 
 const LIVE_STATUSES = [SubscriptionStatus.trial, SubscriptionStatus.active];
 
@@ -20,39 +20,102 @@ function liveWhere(
   };
 }
 
+/** Enrollments created after this are still in their free period. */
+function freeCutoff(now = new Date()) {
+  return addDays(now, -FREE_COURSE_DAYS);
+}
+
+export function inFreePeriod(enrolledAt: Date, now = new Date()) {
+  return enrolledAt > freeCutoff(now);
+}
+
 @Injectable()
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** The single access check used by every page and endpoint that serves course content. */
-  async hasAccess(userId: string, courseId: string): Promise<boolean> {
+  /**
+   * The single access check used by every page and endpoint that serves course
+   * content. Paid access: a live plan for all tracks, the course's track, or the
+   * course itself. Otherwise every course is free for FREE_COURSE_DAYS, counted
+   * from the first time the student opens it (that first check starts the clock).
+   */
+  async hasAccess(
+    userId: string,
+    courseId: string,
+    // false: only check (for listings); a course never opened still counts as free.
+    { startFree = true } = {},
+  ): Promise<boolean> {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { trackId: true },
+      select: { id: true, trackId: true },
     });
-    return course ? this.hasTrackAccess(userId, course.trackId) : false;
-  }
-
-  async hasTrackAccess(userId: string, trackId: string): Promise<boolean> {
-    const count = await this.prisma.subscription.count({
+    if (!course) return false;
+    const paid = await this.prisma.subscription.count({
       where: {
         ...liveWhere(userId),
-        OR: [{ allTracks: true }, { trackIds: { has: trackId } }],
+        OR: [
+          { allTracks: true },
+          { trackIds: { has: course.trackId } },
+          { courseIds: { has: course.id } },
+        ],
       },
     });
-    return count > 0;
+    if (paid > 0) return true;
+    const where = { userId_courseId: { userId, courseId } };
+    const enrollment = startFree
+      ? await this.prisma.enrollment.upsert({
+          where,
+          create: { userId, courseId },
+          update: {},
+        })
+      : await this.prisma.enrollment.findUnique({ where });
+    return !enrollment || inFreePeriod(enrollment.createdAt);
   }
 
-  /** Any live trial or subscription (e.g. to take part in the community). */
+  /** Track-wide features (daily challenges): access to the track or any of its courses. */
+  async hasTrackAccess(userId: string, trackId: string): Promise<boolean> {
+    const courseIds = (
+      await this.prisma.course.findMany({
+        where: { trackId },
+        select: { id: true },
+      })
+    ).map((c) => c.id);
+    const [paid, free] = await Promise.all([
+      this.prisma.subscription.count({
+        where: {
+          ...liveWhere(userId),
+          OR: [
+            { allTracks: true },
+            { trackIds: { has: trackId } },
+            { courseIds: { hasSome: courseIds } },
+          ],
+        },
+      }),
+      this.prisma.enrollment.count({
+        where: {
+          userId,
+          courseId: { in: courseIds },
+          createdAt: { gt: freeCutoff() },
+        },
+      }),
+    ]);
+    return paid + free > 0;
+  }
+
+  /** Any live plan or free course period (e.g. to take part in the community). */
   async hasAnyAccess(userId: string): Promise<boolean> {
-    return (
-      (await this.prisma.subscription.count({ where: liveWhere(userId) })) > 0
-    );
+    const [paid, free] = await Promise.all([
+      this.prisma.subscription.count({ where: liveWhere(userId) }),
+      this.prisma.enrollment.count({
+        where: { userId, createdAt: { gt: freeCutoff() } },
+      }),
+    ]);
+    return paid + free > 0;
   }
 
   /** Everything the student billing page needs about access. */
   async overview(userId: string) {
-    const [live, pending, everHad, canStartTrial] = await Promise.all([
+    const [live, pending, free] = await Promise.all([
       this.prisma.subscription.findMany({
         where: liveWhere(userId),
         orderBy: { endsAt: 'asc' },
@@ -62,8 +125,11 @@ export class SubscriptionsService {
         where: { userId, status: SubscriptionStatus.pending },
         include: { plan: { select: { id: true, name: true } } },
       }),
-      this.prisma.subscription.count({ where: { userId } }),
-      this.canStartTrial(userId),
+      this.prisma.enrollment.findMany({
+        where: { userId, createdAt: { gt: freeCutoff() } },
+        include: { course: { select: { id: true, title: true } } },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
     return {
       access: live.map((s) => ({
@@ -72,90 +138,18 @@ export class SubscriptionsService {
         plan: s.plan,
         allTracks: s.allTracks,
         trackIds: s.trackIds,
+        courseIds: s.courseIds,
         startsAt: s.startsAt,
         endsAt: s.endsAt,
       })),
-      hasAccess: live.length > 0,
+      // Courses still inside their free 14 days (a paid plan may also cover them).
+      freeCourses: free.map((e) => ({
+        courseId: e.course.id,
+        title: e.course.title,
+        endsAt: addDays(e.createdAt, FREE_COURSE_DAYS),
+      })),
+      hasAccess: live.length > 0 || free.length > 0,
       pendingSubscription: pending,
-      canStartTrial,
-      // Shown on first login: pick a track to start the trial.
-      needsTrackChoice: canStartTrial && everHad === 0,
-    };
-  }
-
-  async canStartTrial(userId: string): Promise<boolean> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-    });
-    const [subs, claims] = await Promise.all([
-      this.prisma.subscription.count({ where: { userId } }),
-      this.prisma.trialClaim.count({ where: this.claimWhere(user) }),
-    ]);
-    return subs === 0 && claims === 0;
-  }
-
-  /**
-   * Starts the 7-day trial on one track. Allowed once per (normalized) email and
-   * once per Google account, even across different LogicLab accounts.
-   */
-  async startTrial(auth: AuthUser, trackId: string) {
-    const track = await this.prisma.track.findFirst({
-      where: { id: trackId, isPublished: true },
-    });
-    if (!track) throw new AppException(HttpStatus.NOT_FOUND, 'TRACK_NOT_FOUND');
-
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT 1 AS ok FROM pg_advisory_xact_lock(hashtext(${auth.id}))`;
-        const user = await tx.user.findUniqueOrThrow({
-          where: { id: auth.id },
-        });
-        const [subs, claims] = await Promise.all([
-          tx.subscription.count({ where: { userId: auth.id } }),
-          tx.trialClaim.count({ where: this.claimWhere(user) }),
-        ]);
-        if (subs > 0 || claims > 0) {
-          throw new AppException(HttpStatus.CONFLICT, 'TRIAL_ALREADY_USED');
-        }
-        await tx.trialClaim.create({
-          data: {
-            userId: auth.id,
-            emailKey: trialEmailKey(user.email),
-            googleId: user.googleId,
-          },
-        });
-        const now = new Date();
-        return tx.subscription.create({
-          data: {
-            userId: auth.id,
-            status: SubscriptionStatus.trial,
-            trackIds: [trackId],
-            startsAt: now,
-            endsAt: addDays(now, TRIAL_DAYS),
-          },
-        });
-      });
-    } catch (err) {
-      // A parallel request or another account claimed the same email/Google ID.
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2002'
-      ) {
-        throw new AppException(HttpStatus.CONFLICT, 'TRIAL_ALREADY_USED');
-      }
-      throw err;
-    }
-  }
-
-  private claimWhere(user: {
-    email: string;
-    googleId: string | null;
-  }): Prisma.TrialClaimWhereInput {
-    return {
-      OR: [
-        { emailKey: trialEmailKey(user.email) },
-        ...(user.googleId ? [{ googleId: user.googleId }] : []),
-      ],
     };
   }
 }

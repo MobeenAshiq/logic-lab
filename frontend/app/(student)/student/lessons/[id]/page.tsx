@@ -30,7 +30,7 @@ import { api, ApiError } from "@/lib/api/client";
 import { toastError } from "@/lib/errors";
 import { t } from "@/lib/i18n";
 import { learningKeys, useProgressReporter } from "@/lib/learning";
-import type { LearnLesson, LessonProgress } from "@/types/api";
+import type { CourseOutline, LearnLesson, LessonProgress } from "@/types/api";
 
 const tl = t.learning.lesson;
 
@@ -158,121 +158,147 @@ function LessonView({ lesson: l }: { lesson: LearnLesson }) {
   const done = l.progress?.completed ?? false;
 
   return (
-    <article className="mx-auto max-w-4xl">
-      <Link
-        href={`/student/courses/${l.course.slug}`}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-      >
-        <ArrowLeft className="size-4" /> {l.course.title}
-      </Link>
-      <p className="text-muted-foreground mt-6 text-sm">{l.module.title}</p>
-      <div className="mt-1 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{l.title}</h1>
-        <Badge variant="secondary">{t.common.lessonTypes[l.type]}</Badge>
-        {done && (
-          <StatusBadge tone="success">
-            <CheckCircle2 className="size-3" /> {tl.completed}
-          </StatusBadge>
-        )}
-      </div>
-
-      {l.isStaff && (
-        <Alert className="mt-4">
-          <AlertDescription>{tl.preview}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="mt-6">
-        {isVideo &&
-          (l.video ? (
-            <VideoPlayer
-              ref={player}
-              lessonId={l.id}
-              media={l.video}
-              startAt={l.progress?.positionSeconds ?? 0}
-              watermark={l.watermark}
-            />
-          ) : (
-            <div className="bg-muted/40 text-muted-foreground grid aspect-video place-items-center rounded-xl border text-center text-sm">
-              <div>
-                <PlayCircle className="mx-auto mb-2 size-10" />
-                {t.learning.player.noVideo}
-              </div>
-            </div>
-          ))}
-        {l.type === "article" &&
-          (l.content ? (
-            <LessonViewer content={l.content} assetUrls={l.assetUrls} />
-          ) : (
-            <EmptyState title={t.student.lesson.empty} />
-          ))}
-        {l.type === "quiz" && <QuizPanel lessonId={l.id} isStaff={l.isStaff} />}
-        {l.type === "assignment" && (
-          <AssignmentPanel lessonId={l.id} courseSlug={l.course.slug} isStaff={l.isStaff} />
-        )}
-      </div>
-
-      {!l.isStaff && <AiTutorPanel lessonId={l.id} />}
-      {!l.isStaff && (l.type === "article" || l.type === "video") && <PracticeCodeReview lessonId={l.id} />}
-
-      <div className="mt-6 flex flex-col gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm">
-          {tracking && !done && isVideo && (
-            <span className="text-muted-foreground">{tl.autoComplete}</span>
-          )}
-          {tracking && !done && l.type === "article" && (
-            <Button size="sm" onClick={() => complete.mutate()} disabled={complete.isPending}>
-              {complete.isPending ? <Spinner /> : <CheckCircle2 />}
-              {tl.markComplete}
-            </Button>
+    <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <LessonOutline slug={l.course.slug} currentId={l.id} />
+      <article className="min-w-0">
+        <Link
+          href={`/student/courses/${l.course.slug}`}
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
+        >
+          <ArrowLeft className="size-4" /> {l.course.title}
+        </Link>
+        <p className="text-muted-foreground mt-6 text-sm">{l.module.title}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{l.title}</h1>
+          <Badge variant="secondary">{t.common.lessonTypes[l.type]}</Badge>
+          {done && (
+            <StatusBadge tone="success">
+              <CheckCircle2 className="size-3" /> {tl.completed}
+            </StatusBadge>
           )}
         </div>
-        <div className="flex gap-2">
-          {l.previousLessonId && (
-            <Button variant="outline" size="sm" asChild>
+
+        <div className="mt-4 flex items-center justify-between gap-2 border-b pb-4">
+          {l.previousLessonId ? (
+            <Button variant="outline" asChild>
               <Link href={`/student/lessons/${l.previousLessonId}`}>
                 <ArrowLeft /> {tl.previous}
               </Link>
             </Button>
+          ) : (
+            <span />
           )}
           {l.nextLessonId && (
-            <Button size="sm" asChild>
+            <Button asChild>
               <Link href={`/student/lessons/${l.nextLessonId}`}>
                 {tl.next} <ArrowRight />
               </Link>
             </Button>
           )}
         </div>
-      </div>
 
-      <Tabs defaultValue="questions" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="questions">{tl.questions}</TabsTrigger>
-          <TabsTrigger value="notes">{tl.notes}</TabsTrigger>
-          <TabsTrigger value="resources">
-            {tl.resources}
-            {l.attachments.length > 0 && ` (${l.attachments.length})`}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="questions" className="pt-4">
-          <QuestionPanel
-            lessonId={l.id}
-            currentTime={isVideo && l.video ? () => player.current?.currentTime() ?? 0 : undefined}
-            onSeek={isVideo && l.video ? (s) => player.current?.seek(s) : undefined}
-          />
-        </TabsContent>
-        <TabsContent value="notes" className="pt-4">
-          {l.notes ? (
-            <p className="text-sm leading-7 whitespace-pre-line">{l.notes}</p>
-          ) : (
-            <p className="text-muted-foreground text-sm">{tl.noNotes}</p>
+        {l.isStaff && (
+          <Alert className="mt-4">
+            <AlertDescription>{tl.preview}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="mt-6">
+          {isVideo &&
+            (l.video ? (
+              <VideoPlayer
+                ref={player}
+                lessonId={l.id}
+                media={l.video}
+                startAt={l.progress?.positionSeconds ?? 0}
+                watermark={l.watermark}
+              />
+            ) : (
+              <div className="bg-muted/40 text-muted-foreground grid aspect-video place-items-center rounded-xl border text-center text-sm">
+                <div>
+                  <PlayCircle className="mx-auto mb-2 size-10" />
+                  {t.learning.player.noVideo}
+                </div>
+              </div>
+            ))}
+          {l.type === "article" &&
+            (l.content ? (
+              <LessonViewer content={l.content} assetUrls={l.assetUrls} />
+            ) : (
+              <EmptyState title={t.student.lesson.empty} />
+            ))}
+          {l.type === "quiz" && <QuizPanel lessonId={l.id} isStaff={l.isStaff} />}
+          {l.type === "assignment" && (
+            <AssignmentPanel lessonId={l.id} courseSlug={l.course.slug} isStaff={l.isStaff} />
           )}
-        </TabsContent>
-        <TabsContent value="resources" className="pt-4">
-          <Resources lesson={l} />
-        </TabsContent>
-      </Tabs>
-    </article>
+        </div>
+
+        {!l.isStaff && <AiTutorPanel lessonId={l.id} />}
+        {!l.isStaff && (l.type === "article" || l.type === "video") && (
+          <PracticeCodeReview lessonId={l.id} />
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm">
+            {tracking && !done && isVideo && (
+              <span className="text-muted-foreground">{tl.autoComplete}</span>
+            )}
+            {tracking && !done && l.type === "article" && (
+              <Button size="sm" onClick={() => complete.mutate()} disabled={complete.isPending}>
+                {complete.isPending ? <Spinner /> : <CheckCircle2 />}
+                {tl.markComplete}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {l.previousLessonId && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/student/lessons/${l.previousLessonId}`}>
+                  <ArrowLeft /> {tl.previous}
+                </Link>
+              </Button>
+            )}
+            {l.nextLessonId && (
+              <Button size="sm" asChild>
+                <Link href={`/student/lessons/${l.nextLessonId}`}>
+                  {tl.next} <ArrowRight />
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <Tabs defaultValue="questions" className="mt-6">
+          <TabsList>
+            <TabsTrigger value="questions">{tl.questions}</TabsTrigger>
+            <TabsTrigger value="notes">{tl.notes}</TabsTrigger>
+            <TabsTrigger value="resources">
+              {tl.resources}
+              {l.attachments.length > 0 && ` (${l.attachments.length})`}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="questions" className="pt-4">
+            <QuestionPanel
+              lessonId={l.id}
+              currentTime={
+                isVideo && l.video ? () => player.current?.currentTime() ?? 0 : undefined
+              }
+              onSeek={isVideo && l.video ? (s) => player.current?.seek(s) : undefined}
+            />
+          </TabsContent>
+          <TabsContent value="notes" className="pt-4">
+            {l.notes ? (
+              <p className="text-sm leading-7 whitespace-pre-line">{l.notes}</p>
+            ) : (
+              <p className="text-muted-foreground text-sm">{tl.noNotes}</p>
+            )}
+          </TabsContent>
+          <TabsContent value="resources" className="pt-4">
+            <Resources lesson={l} />
+          </TabsContent>
+        </Tabs>
+      </article>
+    </div>
   );
 }
 
@@ -300,5 +326,64 @@ function Resources({ lesson }: { lesson: LearnLesson }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Left menu like a tutorial site: every module and lesson of the course. */
+function LessonOutline({ slug, currentId }: { slug: string; currentId: string }) {
+  const outline = useQuery({
+    queryKey: learningKeys.outline(slug),
+    queryFn: () => api<CourseOutline>(`/learn/courses/${slug}`),
+  });
+  if (!outline.data) return <aside className="hidden lg:block" />;
+  return (
+    <aside className="hidden lg:block">
+      <nav
+        aria-label="Course lessons"
+        className="sticky top-20 max-h-[calc(100dvh-6rem)] overflow-y-auto pr-2"
+      >
+        {outline.data.modules.map((m) => (
+          <div key={m.id} className="mb-5">
+            <p className="text-muted-foreground mb-1.5 flex items-center gap-1.5 px-3 text-[11px] font-bold tracking-wider uppercase">
+              {m.locked && <Lock className="size-3" />} {m.title}
+            </p>
+            <ul className="border-l">
+              {m.lessons.map((lesson) => {
+                const current = lesson.id === currentId;
+                const label = (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
+                    {lesson.completed && (
+                      <CheckCircle2 className="text-success size-3.5 shrink-0" />
+                    )}
+                  </>
+                );
+                return (
+                  <li key={lesson.id}>
+                    {m.locked ? (
+                      <span className="text-muted-foreground/60 flex items-center gap-2 px-3 py-1.5 text-sm">
+                        {label}
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/student/lessons/${lesson.id}`}
+                        aria-current={current ? "page" : undefined}
+                        className={`-ml-px flex items-center gap-2 border-l-2 px-3 py-1.5 text-sm transition-colors ${
+                          current
+                            ? "border-primary bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-muted border-transparent"
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
   );
 }

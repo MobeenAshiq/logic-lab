@@ -22,12 +22,16 @@ export class PlansService {
 
   /** Active plans for the pricing and billing pages. */
   async listActive() {
-    const [plans, tracks] = await Promise.all([
+    const [plans, tracks, courses] = await Promise.all([
       this.prisma.plan.findMany({
         where: { isActive: true },
         orderBy: [{ position: 'asc' }, { pricePkr: 'asc' }],
       }),
       this.prisma.track.findMany({
+        where: { isPublished: true },
+        select: { id: true, slug: true, title: true },
+      }),
+      this.prisma.course.findMany({
         where: { isPublished: true },
         select: { id: true, slug: true, title: true },
       }),
@@ -42,6 +46,7 @@ export class PlansService {
       tracks: p.allTracks
         ? tracks
         : tracks.filter((t) => p.trackIds.includes(t.id)),
+      courses: courses.filter((c) => p.courseIds.includes(c.id)),
     }));
   }
 
@@ -53,6 +58,7 @@ export class PlansService {
 
   async createPlan(auth: AuthUser, input: CreatePlanInput, ip: string | null) {
     await this.assertTracksExist(input.trackIds ?? []);
+    await this.assertCoursesExist(input.courseIds ?? []);
     return this.prisma.$transaction(async (tx) => {
       const plan = await tx.plan.create({ data: input });
       await this.audit.log(
@@ -83,17 +89,19 @@ export class PlansService {
     if (!before) throw new AppException(HttpStatus.NOT_FOUND, 'PLAN_NOT_FOUND');
     const allTracks = input.allTracks ?? before.allTracks;
     const trackIds = input.trackIds ?? before.trackIds;
-    if (!allTracks && trackIds.length === 0) {
+    const courseIds = input.courseIds ?? before.courseIds;
+    if (!allTracks && trackIds.length === 0 && courseIds.length === 0) {
       throw new AppException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', {
         errors: [
           {
-            field: 'trackIds',
-            message: 'Choose at least one track, or all tracks.',
+            field: 'courseIds',
+            message: 'Choose at least one course or track, or all tracks.',
           },
         ],
       });
     }
     await this.assertTracksExist(input.trackIds ?? []);
+    await this.assertCoursesExist(input.courseIds ?? []);
     // Existing subscriptions keep their snapshot; this only affects new payments.
     return this.prisma.$transaction(async (tx) => {
       const plan = await tx.plan.update({ where: { id }, data: input });
@@ -207,6 +215,16 @@ export class PlansService {
       discount,
       total,
     };
+  }
+
+  private async assertCoursesExist(ids: string[]) {
+    if (ids.length === 0) return;
+    const found = await this.prisma.course.count({
+      where: { id: { in: ids } },
+    });
+    if (found !== new Set(ids).size) {
+      throw new AppException(HttpStatus.NOT_FOUND, 'COURSE_NOT_FOUND');
+    }
   }
 
   private async assertTracksExist(ids: string[]) {

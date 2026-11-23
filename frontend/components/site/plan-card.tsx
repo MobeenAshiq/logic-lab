@@ -56,7 +56,7 @@ export function PlanCard({ plan, highlight = false }: { plan: PublicPlan; highli
         <div className="border-border my-5 border-t" />
 
         <ul className="space-y-2.5 text-sm">
-          {(plan.allTracks ? [{ id: "all", title: t.site.pricing.allTracks }] : plan.tracks).map(
+          {(plan.allTracks ? [{ id: "all", title: t.site.pricing.allTracks }] : [...plan.courses, ...plan.tracks]).map(
             (track) => (
               <li key={track.id} className="flex items-center gap-2.5 text-foreground">
                 <span className="grid size-4 place-items-center rounded-full bg-primary/10 text-primary">
@@ -70,7 +70,7 @@ export function PlanCard({ plan, highlight = false }: { plan: PublicPlan; highli
             <span className="grid size-4 place-items-center rounded-full bg-success/10 text-success">
               <Check className="size-3 stroke-[2.5]" />
             </span>
-            <span>7-day free trial included</span>
+            <span>First 14 days of each course free</span>
           </li>
           <li className="flex items-center gap-2.5 text-muted-foreground text-xs">
             <span className="grid size-4 place-items-center rounded-full bg-success/10 text-success">

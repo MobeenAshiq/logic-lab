@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api/client";
 import { applyFormErrors } from "@/lib/errors";
 import { t } from "@/lib/i18n";
-import type { AdminPlan, AdminTrack } from "@/types/api";
+import type { AdminCourseListItem, AdminPlan, AdminTrack } from "@/types/api";
 
 const s = t.admin.billing.plans.form;
 
@@ -36,11 +36,12 @@ const schema = z
     durationDays: z.number({ error: t.admin.validation.required }).int().min(1).max(730),
     allTracks: z.boolean(),
     trackIds: z.array(z.string()),
+    courseIds: z.array(z.string()),
     isActive: z.boolean(),
   })
-  .refine((v) => v.allTracks || v.trackIds.length > 0, {
-    path: ["trackIds"],
-    message: s.tracksRequired,
+  .refine((v) => v.allTracks || v.trackIds.length > 0 || v.courseIds.length > 0, {
+    path: ["courseIds"],
+    message: "Choose at least one course or track, or all tracks.",
   });
 type Values = z.infer<typeof schema>;
 
@@ -52,6 +53,7 @@ function defaults(plan: AdminPlan | null): Values {
     durationDays: plan?.durationDays ?? 30,
     allTracks: plan?.allTracks ?? false,
     trackIds: plan?.trackIds ?? [],
+    courseIds: plan?.courseIds ?? [],
     isActive: plan?.isActive ?? true,
   };
 }
@@ -69,6 +71,11 @@ export function PlanDialog({
   tracks: AdminTrack[];
 }) {
   const queryClient = useQueryClient();
+  const courses = useQuery({
+    queryKey: ["admin", "courses", "all"],
+    queryFn: () => api<AdminCourseListItem[]>("/admin/content/courses"),
+    enabled: open,
+  });
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults(plan) });
 
   useEffect(() => {
@@ -77,7 +84,11 @@ export function PlanDialog({
 
   const mutation = useMutation({
     mutationFn: (values: Values) => {
-      const body = { ...values, trackIds: values.allTracks ? [] : values.trackIds };
+      const body = {
+        ...values,
+        trackIds: values.allTracks ? [] : values.trackIds,
+        courseIds: values.allTracks ? [] : values.courseIds,
+      };
       return plan
         ? api<AdminPlan>(`/admin/billing/plans/${plan.id}`, { method: "PATCH", body })
         : api<AdminPlan>("/admin/billing/plans", { method: "POST", body });
@@ -141,34 +152,24 @@ export function PlanDialog({
             />
           </div>
           {!allTracks && (
-            <Field label={s.tracks} error={errors.trackIds?.message}>
-              <Controller
-                control={form.control}
-                name="trackIds"
-                render={({ field }) => (
-                  <div className="grid gap-2 rounded-lg border p-3">
-                    {tracks.map((track) => {
-                      const checked = field.value.includes(track.id);
-                      return (
-                        <label key={track.id} className="flex items-center gap-2 text-sm">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(c) =>
-                              field.onChange(
-                                c === true
-                                  ? [...field.value, track.id]
-                                  : field.value.filter((id) => id !== track.id),
-                              )
-                            }
-                          />
-                          {track.title}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              />
-            </Field>
+            <>
+              <Field label="Courses" hint="Give each course its own plan by picking just that course." error={errors.courseIds?.message}>
+                <Controller
+                  control={form.control}
+                  name="courseIds"
+                  render={({ field }) => (
+                    <CheckList items={courses.data ?? []} value={field.value} onChange={field.onChange} />
+                  )}
+                />
+              </Field>
+              <Field label={s.tracks} hint="Or a whole track: every course in it." error={errors.trackIds?.message}>
+                <Controller
+                  control={form.control}
+                  name="trackIds"
+                  render={({ field }) => <CheckList items={tracks} value={field.value} onChange={field.onChange} />}
+                />
+              </Field>
+            </>
           )}
           <div className="flex items-center justify-between gap-4">
             <Label htmlFor="plan-active">{s.active}</Label>
@@ -192,5 +193,31 @@ export function PlanDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CheckList({
+  items,
+  value,
+  onChange,
+}: {
+  items: { id: string; title: string }[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  return (
+    <div className="grid max-h-48 gap-2 overflow-y-auto rounded-lg border p-3">
+      {items.map((item) => (
+        <label key={item.id} className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={value.includes(item.id)}
+            onCheckedChange={(c) =>
+              onChange(c === true ? [...value, item.id] : value.filter((id) => id !== item.id))
+            }
+          />
+          {item.title}
+        </label>
+      ))}
+    </div>
   );
 }

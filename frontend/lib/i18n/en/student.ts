@@ -2,11 +2,6 @@ export const student = {
   dashboard: {
     greeting: (name: string) => `Welcome${name ? `, ${name.split(" ")[0]}` : ""}`,
     subtitle: "Here is your learning space.",
-    chooseTrackTitle: "Pick your free-trial track",
-    chooseTrackBody:
-      "You get 7 days of full access to one track. You can unlock more tracks with a plan later.",
-    startTrial: "Start 7-day trial",
-    trialStarted: "Your free trial has started. Happy learning!",
     accessTitle: "Your access",
     endsIn: (days: number) =>
       days <= 0 ? "Ends today" : `Ends in ${days} day${days === 1 ? "" : "s"}`,

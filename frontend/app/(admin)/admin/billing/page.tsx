@@ -68,7 +68,14 @@ function PlansTab({ plans, tracks }: { plans: AdminPlan[]; tracks: AdminTrack[] 
                   <TableCell className="tabular-nums">{pkr(plan.pricePkr)}</TableCell>
                   <TableCell>{s.plans.days(plan.durationDays)}</TableCell>
                   <TableCell className="text-xs" title={plan.trackIds.map(trackTitle).join(", ")}>
-                    {plan.allTracks ? s.plans.allTracks : s.plans.tracksCount(plan.trackIds.length)}
+                    {plan.allTracks
+                      ? s.plans.allTracks
+                      : [
+                          plan.courseIds.length > 0 && `${plan.courseIds.length} course${plan.courseIds.length === 1 ? "" : "s"}`,
+                          plan.trackIds.length > 0 && s.plans.tracksCount(plan.trackIds.length),
+                        ]
+                          .filter(Boolean)
+                          .join(" + ")}
                   </TableCell>
                   <TableCell>
                     <StatusBadge tone={plan.isActive ? "success" : "neutral"}>

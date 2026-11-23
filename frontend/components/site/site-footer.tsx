@@ -97,7 +97,7 @@ export function SiteFooter() {
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-                7-Day Free Trial
+                14 Days Free per Course
               </Link>
             </li>
             <li>
